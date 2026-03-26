@@ -1,0 +1,1313 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>메틸렌 블루 흡광도 분석</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        :root {
+            --primary: #1a73e8;
+            --primary-light: #e8f0fe;
+            --accent: #0d47a1;
+            --bg: #f5f7fa;
+            --card: #ffffff;
+            --text: #202124;
+            --text-secondary: #5f6368;
+            --border: #dadce0;
+            --success: #0f9d58;
+            --warning: #f4b400;
+            --error: #db4437;
+            --mb-color: #0066cc;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            font-family: 'Segoe UI', -apple-system, BlinkMacSystemFont, sans-serif;
+            background: var(--bg);
+            color: var(--text);
+            line-height: 1.6;
+        }
+
+        .header {
+            background: linear-gradient(135deg, #0d47a1 0%, #1565c0 50%, #1a73e8 100%);
+            color: white;
+            padding: 2rem 1.5rem;
+            text-align: center;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .header::before {
+            content: '';
+            position: absolute;
+            top: -50%;
+            left: -50%;
+            width: 200%;
+            height: 200%;
+            background: radial-gradient(ellipse at center, rgba(255,255,255,0.1) 0%, transparent 70%);
+            animation: pulse 4s ease-in-out infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { transform: scale(1); opacity: 0.5; }
+            50% { transform: scale(1.1); opacity: 0.8; }
+        }
+
+        .header h1 {
+            font-size: 1.8rem;
+            font-weight: 700;
+            position: relative;
+            z-index: 1;
+        }
+
+        .header .subtitle {
+            font-size: 0.95rem;
+            opacity: 0.9;
+            margin-top: 0.5rem;
+            position: relative;
+            z-index: 1;
+        }
+
+        .header .info-bar {
+            display: flex;
+            justify-content: center;
+            gap: 1.5rem;
+            flex-wrap: wrap;
+            margin-top: 1rem;
+            font-size: 0.85rem;
+            opacity: 0.85;
+            position: relative;
+            z-index: 1;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 1.5rem;
+        }
+
+        .card {
+            background: var(--card);
+            border-radius: 12px;
+            padding: 1.5rem;
+            margin-bottom: 1.5rem;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.08), 0 1px 2px rgba(0,0,0,0.06);
+            border: 1px solid var(--border);
+        }
+
+        .card h2 {
+            font-size: 1.2rem;
+            color: var(--accent);
+            margin-bottom: 1rem;
+            padding-bottom: 0.5rem;
+            border-bottom: 2px solid var(--primary-light);
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .card h2 .icon {
+            font-size: 1.4rem;
+        }
+
+        /* 96-well plate visualization */
+        .plate-visual {
+            display: flex;
+            gap: 6px;
+            justify-content: center;
+            padding: 1rem;
+            background: #f8f9fa;
+            border-radius: 8px;
+            margin-bottom: 1rem;
+            overflow-x: auto;
+        }
+
+        .well {
+            width: 60px;
+            height: 60px;
+            border-radius: 50%;
+            border: 2px solid #ccc;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.65rem;
+            font-weight: 600;
+            transition: all 0.3s ease;
+            cursor: pointer;
+            position: relative;
+            flex-shrink: 0;
+        }
+
+        .well:hover {
+            transform: scale(1.15);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+            z-index: 10;
+        }
+
+        .well .well-label {
+            font-size: 0.7rem;
+            font-weight: 700;
+            color: white;
+            text-shadow: 0 1px 2px rgba(0,0,0,0.5);
+        }
+
+        .well .well-conc {
+            font-size: 0.55rem;
+            color: rgba(255,255,255,0.9);
+            text-shadow: 0 1px 2px rgba(0,0,0,0.5);
+        }
+
+        /* Data table */
+        .data-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 0.85rem;
+        }
+
+        .data-table th {
+            background: var(--primary);
+            color: white;
+            padding: 0.6rem 0.5rem;
+            text-align: center;
+            font-weight: 600;
+            font-size: 0.78rem;
+            white-space: nowrap;
+        }
+
+        .data-table th:first-child {
+            border-radius: 8px 0 0 0;
+        }
+
+        .data-table th:last-child {
+            border-radius: 0 8px 0 0;
+        }
+
+        .data-table td {
+            padding: 0.5rem;
+            text-align: center;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .data-table tr:nth-child(even) {
+            background: #f8f9fa;
+        }
+
+        .data-table tr:hover {
+            background: var(--primary-light);
+        }
+
+        .data-table input {
+            width: 80px;
+            padding: 0.3rem;
+            border: 1.5px solid var(--border);
+            border-radius: 6px;
+            text-align: center;
+            font-size: 0.85rem;
+            transition: border-color 0.2s;
+        }
+
+        .data-table input:focus {
+            outline: none;
+            border-color: var(--primary);
+            box-shadow: 0 0 0 3px rgba(26,115,232,0.15);
+        }
+
+        .data-table .blank-row {
+            background: #fff3e0 !important;
+        }
+
+        /* Charts grid */
+        .charts-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 1.5rem;
+        }
+
+        @media (max-width: 900px) {
+            .charts-grid { grid-template-columns: 1fr; }
+        }
+
+        .chart-container {
+            background: var(--card);
+            border-radius: 12px;
+            padding: 1.5rem;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+            border: 1px solid var(--border);
+        }
+
+        .chart-container h3 {
+            font-size: 1rem;
+            color: var(--accent);
+            margin-bottom: 1rem;
+            text-align: center;
+        }
+
+        .chart-wrapper {
+            position: relative;
+            height: 320px;
+        }
+
+        /* Stats cards */
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 1rem;
+            margin-bottom: 1rem;
+        }
+
+        .stat-card {
+            background: linear-gradient(135deg, var(--primary-light) 0%, #fff 100%);
+            border-radius: 10px;
+            padding: 1rem;
+            text-align: center;
+            border: 1px solid var(--border);
+        }
+
+        .stat-card .stat-value {
+            font-size: 1.6rem;
+            font-weight: 700;
+            color: var(--accent);
+        }
+
+        .stat-card .stat-label {
+            font-size: 0.78rem;
+            color: var(--text-secondary);
+            margin-top: 0.25rem;
+        }
+
+        .stat-card.good .stat-value { color: var(--success); }
+        .stat-card.warning .stat-value { color: var(--warning); }
+        .stat-card.bad .stat-value { color: var(--error); }
+
+        /* Buttons */
+        .btn {
+            padding: 0.6rem 1.5rem;
+            border: none;
+            border-radius: 8px;
+            font-size: 0.9rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.4rem;
+        }
+
+        .btn-primary {
+            background: var(--primary);
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background: var(--accent);
+            transform: translateY(-1px);
+            box-shadow: 0 4px 12px rgba(26,115,232,0.3);
+        }
+
+        .btn-secondary {
+            background: white;
+            color: var(--primary);
+            border: 2px solid var(--primary);
+        }
+
+        .btn-secondary:hover {
+            background: var(--primary-light);
+        }
+
+        .btn-group {
+            display: flex;
+            gap: 0.75rem;
+            flex-wrap: wrap;
+            margin-top: 1rem;
+        }
+
+        /* Analysis section */
+        .analysis-box {
+            background: #f0f7ff;
+            border-left: 4px solid var(--primary);
+            padding: 1rem 1.2rem;
+            border-radius: 0 8px 8px 0;
+            margin-top: 1rem;
+            font-size: 0.9rem;
+            line-height: 1.7;
+        }
+
+        .analysis-box h4 {
+            color: var(--accent);
+            margin-bottom: 0.5rem;
+        }
+
+        .analysis-box ul {
+            padding-left: 1.2rem;
+        }
+
+        .analysis-box li {
+            margin-bottom: 0.3rem;
+        }
+
+        .badge {
+            display: inline-block;
+            padding: 0.15rem 0.5rem;
+            border-radius: 12px;
+            font-size: 0.75rem;
+            font-weight: 600;
+        }
+
+        .badge-good { background: #e6f4ea; color: var(--success); }
+        .badge-warning { background: #fef7e0; color: #e37400; }
+        .badge-bad { background: #fce8e6; color: var(--error); }
+
+        /* Beer-Lambert formula display */
+        .formula-display {
+            text-align: center;
+            padding: 1.2rem;
+            background: linear-gradient(135deg, #f0f7ff, #e8f0fe);
+            border-radius: 10px;
+            margin: 1rem 0;
+            font-size: 1.3rem;
+            font-weight: 600;
+            color: var(--accent);
+            font-family: 'Times New Roman', serif;
+            letter-spacing: 1px;
+        }
+
+        .formula-display .formula-desc {
+            font-size: 0.8rem;
+            font-family: 'Segoe UI', sans-serif;
+            color: var(--text-secondary);
+            margin-top: 0.5rem;
+            font-weight: 400;
+        }
+
+        /* Error analysis */
+        .error-bar {
+            height: 8px;
+            background: #e0e0e0;
+            border-radius: 4px;
+            overflow: hidden;
+            margin: 0.3rem 0;
+        }
+
+        .error-bar-fill {
+            height: 100%;
+            border-radius: 4px;
+            transition: width 0.5s ease;
+        }
+
+        .error-table td:first-child {
+            text-align: left;
+            font-weight: 600;
+        }
+
+        /* Discussion section */
+        .discussion-area {
+            width: 100%;
+            min-height: 100px;
+            padding: 0.75rem;
+            border: 1.5px solid var(--border);
+            border-radius: 8px;
+            font-size: 0.9rem;
+            font-family: inherit;
+            resize: vertical;
+            transition: border-color 0.2s;
+        }
+
+        .discussion-area:focus {
+            outline: none;
+            border-color: var(--primary);
+            box-shadow: 0 0 0 3px rgba(26,115,232,0.15);
+        }
+
+        .discussion-member {
+            margin-bottom: 1rem;
+        }
+
+        .discussion-member label {
+            display: block;
+            font-weight: 600;
+            margin-bottom: 0.3rem;
+            color: var(--accent);
+        }
+
+        .footer {
+            text-align: center;
+            padding: 1.5rem;
+            color: var(--text-secondary);
+            font-size: 0.8rem;
+        }
+
+        /* Tooltip */
+        .tooltip {
+            position: relative;
+        }
+
+        .tooltip::after {
+            content: attr(data-tip);
+            position: absolute;
+            bottom: 100%;
+            left: 50%;
+            transform: translateX(-50%);
+            background: #333;
+            color: white;
+            padding: 0.3rem 0.6rem;
+            border-radius: 4px;
+            font-size: 0.7rem;
+            white-space: nowrap;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.2s;
+        }
+
+        .tooltip:hover::after {
+            opacity: 1;
+        }
+
+        /* Print styles */
+        @media print {
+            .header { padding: 1rem; }
+            .btn-group { display: none; }
+            .card { break-inside: avoid; }
+        }
+
+        .tab-group {
+            display: flex;
+            gap: 0;
+            margin-bottom: 1rem;
+            border-bottom: 2px solid var(--border);
+        }
+
+        .tab {
+            padding: 0.6rem 1.2rem;
+            cursor: pointer;
+            font-weight: 600;
+            font-size: 0.9rem;
+            color: var(--text-secondary);
+            border-bottom: 2px solid transparent;
+            margin-bottom: -2px;
+            transition: all 0.2s;
+        }
+
+        .tab:hover {
+            color: var(--primary);
+        }
+
+        .tab.active {
+            color: var(--primary);
+            border-bottom-color: var(--primary);
+        }
+
+        .tab-content {
+            display: none;
+        }
+
+        .tab-content.active {
+            display: block;
+        }
+
+        .conc-unit-toggle {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            font-size: 0.85rem;
+            margin-bottom: 0.5rem;
+        }
+
+        .conc-unit-toggle select {
+            padding: 0.3rem 0.5rem;
+            border: 1.5px solid var(--border);
+            border-radius: 6px;
+            font-size: 0.85rem;
+        }
+    </style>
+</head>
+<body>
+
+<div class="header">
+    <h1>Methylene Blue Absorbance Analysis</h1>
+    <div class="subtitle">마이크로피펫 사용 및 메틸렌 블루 흡광도 측정 분석 프로그램</div>
+    <div class="info-bar">
+        <span>조장: 2116 정수현</span>
+        <span>조원: 2101 김서율, 2107 박세인, 2113 이하은</span>
+        <span>2026/03/26</span>
+        <span>21.4°C / 37% / 1019.5hPa</span>
+    </div>
+</div>
+
+<div class="container">
+
+    <!-- 96-well plate visualization -->
+    <div class="card">
+        <h2><span class="icon">🧫</span> 96-Well Plate 시각화 (A1–A12)</h2>
+        <div class="plate-visual" id="plateVisual"></div>
+        <div style="text-align:center; font-size:0.8rem; color:var(--text-secondary);">
+            색상 진하기 = 농도 비례 | 웰에 마우스를 올리면 상세 정보 표시
+        </div>
+    </div>
+
+    <!-- Beer-Lambert Law -->
+    <div class="card">
+        <h2><span class="icon">📐</span> Beer-Lambert 법칙</h2>
+        <div class="formula-display">
+            A = ε · l · c
+            <div class="formula-desc">
+                A: 흡광도 (무단위) &nbsp;|&nbsp; ε: 몰 흡광 계수 (M⁻¹cm⁻¹) &nbsp;|&nbsp; l: 광로 길이 (cm) &nbsp;|&nbsp; c: 농도 (mol/L)
+            </div>
+        </div>
+        <div style="display:flex; gap:1rem; flex-wrap:wrap; margin-top:0.75rem;">
+            <div style="flex:1; min-width:200px;">
+                <label style="font-size:0.85rem; font-weight:600;">ε (몰 흡광 계수, 664nm)</label>
+                <input type="number" id="epsilon" value="76000" style="width:100%; padding:0.4rem; border:1.5px solid var(--border); border-radius:6px; margin-top:0.3rem;" />
+                <div style="font-size:0.75rem; color:var(--text-secondary); margin-top:0.2rem;">메틸렌 블루 ε ≈ 76,000 M⁻¹cm⁻¹ (664nm 기준, 문헌값)</div>
+            </div>
+            <div style="flex:1; min-width:200px;">
+                <label style="font-size:0.85rem; font-weight:600;">l (광로 길이, cm)</label>
+                <input type="number" id="pathLength" value="0.3" step="0.01" style="width:100%; padding:0.4rem; border:1.5px solid var(--border); border-radius:6px; margin-top:0.3rem;" />
+                <div style="font-size:0.75rem; color:var(--text-secondary); margin-top:0.2rem;">96-well plate (100μL 기준) ≈ 0.28~0.31 cm</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Data Input Table -->
+    <div class="card">
+        <h2><span class="icon">📊</span> 실험 데이터 입력 및 이론값 비교</h2>
+
+        <div class="conc-unit-toggle">
+            <label>농도 단위:</label>
+            <select id="concUnit" onchange="updateAll()">
+                <option value="mg">mg/mL</option>
+                <option value="mol">mol/L (M)</option>
+            </select>
+        </div>
+
+        <div style="overflow-x:auto;">
+            <table class="data-table" id="dataTable">
+                <thead>
+                    <tr>
+                        <th>웰</th>
+                        <th>희석 단계</th>
+                        <th>희석 배수</th>
+                        <th>농도</th>
+                        <th>이론 흡광도</th>
+                        <th>측정 흡광도 (입력)</th>
+                        <th>보정 흡광도</th>
+                        <th>오차 (%)</th>
+                    </tr>
+                </thead>
+                <tbody id="dataBody"></tbody>
+            </table>
+        </div>
+
+        <div class="btn-group">
+            <button class="btn btn-primary" onclick="updateAll()">분석 실행</button>
+            <button class="btn btn-secondary" onclick="loadSampleData()">예시 데이터 로드</button>
+            <button class="btn btn-secondary" onclick="clearData()">초기화</button>
+            <button class="btn btn-secondary" onclick="exportCSV()">CSV 내보내기</button>
+        </div>
+    </div>
+
+    <!-- Statistics summary -->
+    <div class="card" id="statsCard" style="display:none;">
+        <h2><span class="icon">📈</span> 분석 결과 요약</h2>
+        <div class="stats-grid" id="statsGrid"></div>
+    </div>
+
+    <!-- Charts -->
+    <div class="charts-grid" id="chartsSection" style="display:none;">
+        <div class="chart-container">
+            <h3>농도 vs 흡광도 (선형)</h3>
+            <div class="chart-wrapper">
+                <canvas id="linearChart"></canvas>
+            </div>
+        </div>
+        <div class="chart-container">
+            <h3>농도 vs 흡광도 (로그 스케일)</h3>
+            <div class="chart-wrapper">
+                <canvas id="logChart"></canvas>
+            </div>
+        </div>
+        <div class="chart-container">
+            <h3>이론값 vs 측정값 비교</h3>
+            <div class="chart-wrapper">
+                <canvas id="comparisonChart"></canvas>
+            </div>
+        </div>
+        <div class="chart-container">
+            <h3>오차율 분석 (웰별)</h3>
+            <div class="chart-wrapper">
+                <canvas id="errorChart"></canvas>
+            </div>
+        </div>
+    </div>
+
+    <!-- Detailed Analysis -->
+    <div class="card" id="analysisCard" style="display:none;">
+        <h2><span class="icon">🔬</span> 상세 분석</h2>
+
+        <div class="tab-group">
+            <div class="tab active" onclick="switchTab('linearity')">선형성 분석</div>
+            <div class="tab" onclick="switchTab('accuracy')">정확도 분석</div>
+            <div class="tab" onclick="switchTab('precision')">정밀도 평가</div>
+            <div class="tab" onclick="switchTab('beerlambert')">Beer-Lambert 검증</div>
+        </div>
+
+        <div class="tab-content active" id="tab-linearity"></div>
+        <div class="tab-content" id="tab-accuracy"></div>
+        <div class="tab-content" id="tab-precision"></div>
+        <div class="tab-content" id="tab-beerlambert"></div>
+    </div>
+
+    <!-- Discussion -->
+    <div class="card">
+        <h2><span class="icon">💬</span> 고찰 (Discussion)</h2>
+        <div class="discussion-member">
+            <label>2101 김서율</label>
+            <textarea class="discussion-area" id="disc_kim" placeholder="실험 결과에 대한 고찰을 작성하세요..."></textarea>
+        </div>
+        <div class="discussion-member">
+            <label>2107 박세인</label>
+            <textarea class="discussion-area" id="disc_park" placeholder="실험 결과에 대한 고찰을 작성하세요..."></textarea>
+        </div>
+        <div class="discussion-member">
+            <label>2113 이하은</label>
+            <textarea class="discussion-area" id="disc_lee" placeholder="실험 결과에 대한 고찰을 작성하세요..."></textarea>
+        </div>
+        <div class="discussion-member">
+            <label>2116 정수현</label>
+            <textarea class="discussion-area" id="disc_jung" placeholder="실험 결과에 대한 고찰을 작성하세요..."></textarea>
+        </div>
+    </div>
+
+</div>
+
+<div class="footer">
+    Methylene Blue Absorbance Analyzer &copy; 2026 | 전남과학고등학교 생명과학 실험
+</div>
+
+<script>
+// ============ CONSTANTS ============
+const MW_MB = 319.85; // g/mol (methylene blue molecular weight)
+const STOCK_CONC_MG = 1.0; // mg/mL
+const STOCK_CONC_MOL = (STOCK_CONC_MG / 1000) / (MW_MB / 1000); // mol/L = 3.126e-3 M
+
+const WELLS = ['A1','A2','A3','A4','A5','A6','A7','A8','A9','A10','A11','A12'];
+const DILUTION_LABELS = ['원액','1차 희석','2차 희석','3차 희석','4차 희석','5차 희석',
+                         '6차 희석','7차 희석','8차 희석','9차 희석','10차 희석','대조군'];
+const DILUTION_FACTORS = [1,2,4,8,16,32,64,128,256,512,1024,Infinity];
+
+let charts = {};
+let measuredData = new Array(12).fill(null);
+
+// ============ INITIALIZATION ============
+function init() {
+    buildPlate();
+    buildTable();
+    updateAll();
+}
+
+function getEpsilon() {
+    return parseFloat(document.getElementById('epsilon').value) || 76000;
+}
+
+function getPathLength() {
+    return parseFloat(document.getElementById('pathLength').value) || 0.3;
+}
+
+function getConcentrations(unit) {
+    return DILUTION_FACTORS.map(f => {
+        if (f === Infinity) return 0;
+        if (unit === 'mol') return STOCK_CONC_MOL / f;
+        return STOCK_CONC_MG / f;
+    });
+}
+
+function theoreticalAbsorbance(concMol) {
+    return getEpsilon() * getPathLength() * concMol;
+}
+
+// ============ PLATE VISUALIZATION ============
+function buildPlate() {
+    const plate = document.getElementById('plateVisual');
+    plate.innerHTML = '';
+    const concsMg = getConcentrations('mg');
+
+    for (let i = 0; i < 12; i++) {
+        const well = document.createElement('div');
+        well.className = 'well';
+        const intensity = i < 11 ? Math.max(0, 1 - i * 0.09) : 0;
+        const r = Math.round(255 * (1 - intensity) + 0 * intensity);
+        const g = Math.round(255 * (1 - intensity) + 80 * intensity);
+        const b = Math.round(255 * (1 - intensity) + 200 * intensity);
+        well.style.background = i < 11
+            ? `rgba(0, ${50 + intensity * 30}, ${150 + intensity * 105}, ${0.15 + intensity * 0.85})`
+            : '#f0f0f0';
+        well.style.borderColor = i < 11 ? `rgba(0,60,180,${0.3 + intensity * 0.5})` : '#ccc';
+
+        const concText = i < 11
+            ? (concsMg[i] >= 0.01 ? concsMg[i].toFixed(3) : concsMg[i].toExponential(1))
+            : 'blank';
+
+        well.innerHTML = `
+            <span class="well-label" style="color:${i < 11 && intensity > 0.3 ? 'white' : '#333'}">${WELLS[i]}</span>
+            <span class="well-conc" style="color:${i < 11 && intensity > 0.3 ? 'rgba(255,255,255,0.85)' : '#666'}">${concText}</span>
+        `;
+        well.title = `${WELLS[i]}: ${DILUTION_LABELS[i]}\n농도: ${concText} mg/mL\n희석 배수: ${DILUTION_FACTORS[i] === Infinity ? '∞' : DILUTION_FACTORS[i] + '×'}`;
+        plate.appendChild(well);
+    }
+}
+
+// ============ DATA TABLE ============
+function buildTable() {
+    const tbody = document.getElementById('dataBody');
+    tbody.innerHTML = '';
+    const unit = document.getElementById('concUnit').value;
+    const concs = getConcentrations(unit);
+    const concsMol = getConcentrations('mol');
+
+    for (let i = 0; i < 12; i++) {
+        const tr = document.createElement('tr');
+        if (i === 11) tr.className = 'blank-row';
+
+        const theoA = i < 11 ? theoreticalAbsorbance(concsMol[i]) : 0;
+        const concStr = i < 11
+            ? (concs[i] >= 0.001 ? concs[i].toFixed(4) : concs[i].toExponential(3))
+            : '0';
+        const factorStr = DILUTION_FACTORS[i] === Infinity ? '∞' : DILUTION_FACTORS[i] + '×';
+
+        tr.innerHTML = `
+            <td style="font-weight:600;">${WELLS[i]}</td>
+            <td>${DILUTION_LABELS[i]}</td>
+            <td>${factorStr}</td>
+            <td>${concStr}${unit === 'mol' ? ' M' : ' mg/mL'}</td>
+            <td>${theoA.toFixed(4)}</td>
+            <td><input type="number" step="0.001" id="abs_${i}" value="${measuredData[i] !== null ? measuredData[i] : ''}" oninput="saveMeasured(${i}, this.value)" placeholder="0.000" /></td>
+            <td id="corrected_${i}">-</td>
+            <td id="error_${i}">-</td>
+        `;
+        tbody.appendChild(tr);
+    }
+}
+
+function saveMeasured(index, val) {
+    measuredData[index] = val !== '' ? parseFloat(val) : null;
+}
+
+// ============ ANALYSIS ============
+function updateAll() {
+    buildPlate();
+    buildTable();
+
+    // Restore saved values
+    for (let i = 0; i < 12; i++) {
+        if (measuredData[i] !== null) {
+            document.getElementById(`abs_${i}`).value = measuredData[i];
+        }
+    }
+
+    const hasData = measuredData.some(v => v !== null);
+    if (!hasData) {
+        document.getElementById('statsCard').style.display = 'none';
+        document.getElementById('chartsSection').style.display = 'none';
+        document.getElementById('analysisCard').style.display = 'none';
+        return;
+    }
+
+    // Blank correction
+    const blankVal = measuredData[11] !== null ? measuredData[11] : 0;
+    const corrected = measuredData.map((v, i) => {
+        if (v === null) return null;
+        return Math.max(0, v - blankVal);
+    });
+
+    const concsMol = getConcentrations('mol');
+    const concsMg = getConcentrations('mg');
+
+    // Calculate errors
+    const errors = [];
+    for (let i = 0; i < 11; i++) {
+        const theoA = theoreticalAbsorbance(concsMol[i]);
+        if (corrected[i] !== null && theoA > 0) {
+            const err = ((corrected[i] - theoA) / theoA) * 100;
+            errors.push({ well: WELLS[i], error: err, absError: Math.abs(err) });
+            document.getElementById(`corrected_${i}`).textContent = corrected[i].toFixed(4);
+            const badge = Math.abs(err) < 10 ? 'badge-good' : Math.abs(err) < 25 ? 'badge-warning' : 'badge-bad';
+            document.getElementById(`error_${i}`).innerHTML = `<span class="badge ${badge}">${err > 0 ? '+' : ''}${err.toFixed(1)}%</span>`;
+        }
+    }
+    if (corrected[11] !== null) {
+        document.getElementById(`corrected_${11}`).textContent = corrected[11].toFixed(4);
+        document.getElementById(`error_${11}`).textContent = 'blank';
+    }
+
+    // Linear regression (concentration in mol/L vs corrected absorbance)
+    const validPairs = [];
+    for (let i = 0; i < 11; i++) {
+        if (corrected[i] !== null) {
+            validPairs.push({ x: concsMol[i], y: corrected[i], xMg: concsMg[i], well: WELLS[i] });
+        }
+    }
+
+    let r2 = 0, slope = 0, intercept = 0;
+    if (validPairs.length >= 2) {
+        const reg = linearRegression(validPairs.map(p => p.x), validPairs.map(p => p.y));
+        r2 = reg.r2;
+        slope = reg.slope;
+        intercept = reg.intercept;
+    }
+
+    // Average error
+    const avgError = errors.length > 0 ? errors.reduce((s, e) => s + e.absError, 0) / errors.length : 0;
+    const maxError = errors.length > 0 ? Math.max(...errors.map(e => e.absError)) : 0;
+
+    // Stats cards
+    showStats(r2, slope, intercept, avgError, maxError, validPairs.length);
+
+    // Charts
+    drawCharts(validPairs, corrected, concsMol, concsMg, slope, intercept, errors);
+
+    // Detailed analysis
+    showAnalysis(r2, slope, intercept, avgError, errors, validPairs);
+
+    document.getElementById('statsCard').style.display = 'block';
+    document.getElementById('chartsSection').style.display = 'grid';
+    document.getElementById('analysisCard').style.display = 'block';
+}
+
+function linearRegression(xs, ys) {
+    const n = xs.length;
+    let sumX = 0, sumY = 0, sumXY = 0, sumX2 = 0, sumY2 = 0;
+    for (let i = 0; i < n; i++) {
+        sumX += xs[i]; sumY += ys[i];
+        sumXY += xs[i] * ys[i];
+        sumX2 += xs[i] * xs[i];
+        sumY2 += ys[i] * ys[i];
+    }
+    const meanX = sumX / n, meanY = sumY / n;
+    const slope = (sumXY - n * meanX * meanY) / (sumX2 - n * meanX * meanX);
+    const intercept = meanY - slope * meanX;
+
+    let ssRes = 0, ssTot = 0;
+    for (let i = 0; i < n; i++) {
+        const pred = slope * xs[i] + intercept;
+        ssRes += (ys[i] - pred) ** 2;
+        ssTot += (ys[i] - meanY) ** 2;
+    }
+    const r2 = ssTot === 0 ? 0 : 1 - ssRes / ssTot;
+    return { slope, intercept, r2 };
+}
+
+// ============ STATS DISPLAY ============
+function showStats(r2, slope, intercept, avgError, maxError, dataPoints) {
+    const grid = document.getElementById('statsGrid');
+    const r2Class = r2 > 0.99 ? 'good' : r2 > 0.95 ? 'warning' : 'bad';
+    const errClass = avgError < 10 ? 'good' : avgError < 25 ? 'warning' : 'bad';
+    const epsilonCalc = slope; // slope ≈ ε * l
+
+    grid.innerHTML = `
+        <div class="stat-card ${r2Class}">
+            <div class="stat-value">${r2.toFixed(4)}</div>
+            <div class="stat-label">R² (결정계수)</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-value">${(slope / getPathLength()).toFixed(0)}</div>
+            <div class="stat-label">실험적 ε (M⁻¹cm⁻¹)</div>
+        </div>
+        <div class="stat-card ${errClass}">
+            <div class="stat-value">${avgError.toFixed(1)}%</div>
+            <div class="stat-label">평균 오차율</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-value">${maxError.toFixed(1)}%</div>
+            <div class="stat-label">최대 오차율</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-value">${dataPoints}</div>
+            <div class="stat-label">유효 데이터 수</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-value">${intercept >= 0 ? '+' : ''}${intercept.toFixed(4)}</div>
+            <div class="stat-label">y절편 (이상적: 0)</div>
+        </div>
+    `;
+}
+
+// ============ CHARTS ============
+function drawCharts(validPairs, corrected, concsMol, concsMg, slope, intercept, errors) {
+    // Destroy existing charts
+    Object.values(charts).forEach(c => c.destroy());
+    charts = {};
+
+    const unit = document.getElementById('concUnit').value;
+
+    // 1. Linear chart
+    const ctx1 = document.getElementById('linearChart').getContext('2d');
+    const theoPoints = [];
+    for (let c = 0; c <= concsMol[0] * 1.05; c += concsMol[0] / 100) {
+        theoPoints.push({ x: unit === 'mol' ? c : c * MW_MB, y: theoreticalAbsorbance(c) });
+    }
+    const regPoints = [];
+    for (let c = 0; c <= concsMol[0] * 1.05; c += concsMol[0] / 100) {
+        regPoints.push({ x: unit === 'mol' ? c : c * MW_MB, y: slope * c + intercept });
+    }
+
+    charts.linear = new Chart(ctx1, {
+        type: 'scatter',
+        data: {
+            datasets: [
+                {
+                    label: '측정값 (보정)',
+                    data: validPairs.map(p => ({ x: unit === 'mol' ? p.x : p.xMg, y: p.y })),
+                    backgroundColor: 'rgba(26,115,232,0.8)',
+                    borderColor: '#1a73e8',
+                    pointRadius: 6,
+                    pointHoverRadius: 9,
+                },
+                {
+                    label: '이론값 (Beer-Lambert)',
+                    data: theoPoints,
+                    borderColor: 'rgba(15,157,88,0.6)',
+                    backgroundColor: 'transparent',
+                    borderWidth: 2,
+                    borderDash: [6, 3],
+                    pointRadius: 0,
+                    showLine: true,
+                    type: 'line',
+                },
+                {
+                    label: `회귀선 (R²=${(linearRegression(validPairs.map(p=>p.x), validPairs.map(p=>p.y)).r2).toFixed(4)})`,
+                    data: regPoints,
+                    borderColor: 'rgba(219,68,55,0.7)',
+                    backgroundColor: 'transparent',
+                    borderWidth: 2,
+                    pointRadius: 0,
+                    showLine: true,
+                    type: 'line',
+                }
+            ]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            scales: {
+                x: { title: { display: true, text: unit === 'mol' ? '농도 (mol/L)' : '농도 (mg/mL)' } },
+                y: { title: { display: true, text: '흡광도 (A.U.)' }, beginAtZero: true }
+            },
+            plugins: { legend: { position: 'bottom', labels: { font: { size: 11 } } } }
+        }
+    });
+
+    // 2. Log chart
+    const ctx2 = document.getElementById('logChart').getContext('2d');
+    const logValid = validPairs.filter(p => p.x > 0 && p.y > 0);
+
+    charts.log = new Chart(ctx2, {
+        type: 'scatter',
+        data: {
+            datasets: [
+                {
+                    label: '측정값 (log scale)',
+                    data: logValid.map(p => ({ x: unit === 'mol' ? p.x : p.xMg, y: p.y })),
+                    backgroundColor: 'rgba(26,115,232,0.8)',
+                    borderColor: '#1a73e8',
+                    pointRadius: 6,
+                },
+                {
+                    label: '이론값',
+                    data: concsMol.slice(0, 11).filter(c => c > 0).map(c => ({
+                        x: unit === 'mol' ? c : c * MW_MB,
+                        y: theoreticalAbsorbance(c)
+                    })),
+                    backgroundColor: 'rgba(15,157,88,0.6)',
+                    borderColor: '#0f9d58',
+                    pointRadius: 5,
+                    pointStyle: 'triangle',
+                }
+            ]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            scales: {
+                x: {
+                    type: 'logarithmic',
+                    title: { display: true, text: unit === 'mol' ? '농도 (mol/L, log)' : '농도 (mg/mL, log)' }
+                },
+                y: {
+                    type: 'logarithmic',
+                    title: { display: true, text: '흡광도 (A.U., log)' }
+                }
+            },
+            plugins: { legend: { position: 'bottom', labels: { font: { size: 11 } } } }
+        }
+    });
+
+    // 3. Comparison chart (bar)
+    const ctx3 = document.getElementById('comparisonChart').getContext('2d');
+    const labels = [];
+    const theoVals = [];
+    const measVals = [];
+    for (let i = 0; i < 11; i++) {
+        if (corrected[i] !== null) {
+            labels.push(WELLS[i]);
+            theoVals.push(theoreticalAbsorbance(concsMol[i]));
+            measVals.push(corrected[i]);
+        }
+    }
+
+    charts.comparison = new Chart(ctx3, {
+        type: 'bar',
+        data: {
+            labels: labels,
+            datasets: [
+                {
+                    label: '이론 흡광도',
+                    data: theoVals,
+                    backgroundColor: 'rgba(15,157,88,0.5)',
+                    borderColor: '#0f9d58',
+                    borderWidth: 1,
+                },
+                {
+                    label: '측정 흡광도 (보정)',
+                    data: measVals,
+                    backgroundColor: 'rgba(26,115,232,0.5)',
+                    borderColor: '#1a73e8',
+                    borderWidth: 1,
+                }
+            ]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            scales: {
+                y: { title: { display: true, text: '흡광도 (A.U.)' }, beginAtZero: true }
+            },
+            plugins: { legend: { position: 'bottom', labels: { font: { size: 11 } } } }
+        }
+    });
+
+    // 4. Error chart
+    const ctx4 = document.getElementById('errorChart').getContext('2d');
+    charts.error = new Chart(ctx4, {
+        type: 'bar',
+        data: {
+            labels: errors.map(e => e.well),
+            datasets: [{
+                label: '오차율 (%)',
+                data: errors.map(e => e.error),
+                backgroundColor: errors.map(e =>
+                    Math.abs(e.error) < 10 ? 'rgba(15,157,88,0.6)' :
+                    Math.abs(e.error) < 25 ? 'rgba(244,180,0,0.6)' : 'rgba(219,68,55,0.6)'
+                ),
+                borderColor: errors.map(e =>
+                    Math.abs(e.error) < 10 ? '#0f9d58' :
+                    Math.abs(e.error) < 25 ? '#e37400' : '#db4437'
+                ),
+                borderWidth: 1,
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            scales: {
+                y: {
+                    title: { display: true, text: '오차율 (%)' },
+                    grid: { color: (ctx) => ctx.tick.value === 0 ? '#333' : '#e0e0e0' }
+                }
+            },
+            plugins: {
+                legend: { display: false },
+                annotation: { annotations: {} }
+            }
+        }
+    });
+}
+
+// ============ DETAILED ANALYSIS ============
+function showAnalysis(r2, slope, intercept, avgError, errors, validPairs) {
+    // Linearity
+    let linearityGrade, linearityDesc;
+    if (r2 >= 0.999) {
+        linearityGrade = '우수 (Excellent)';
+        linearityDesc = 'Beer-Lambert 법칙의 선형성이 매우 잘 성립합니다. 피펫팅 정확도가 높습니다.';
+    } else if (r2 >= 0.99) {
+        linearityGrade = '양호 (Good)';
+        linearityDesc = '선형성이 양호합니다. 약간의 피펫팅 오차가 있으나 실험 결과로 충분합니다.';
+    } else if (r2 >= 0.95) {
+        linearityGrade = '보통 (Fair)';
+        linearityDesc = '선형성이 보통입니다. 피펫팅 과정에서 유의미한 오차가 발생했을 수 있습니다.';
+    } else {
+        linearityGrade = '미흡 (Poor)';
+        linearityDesc = '선형성이 낮습니다. 피펫팅 기술 개선 또는 실험 조건 재검토가 필요합니다.';
+    }
+
+    document.getElementById('tab-linearity').innerHTML = `
+        <div class="analysis-box">
+            <h4>선형 회귀 분석 결과</h4>
+            <ul>
+                <li><strong>R² (결정계수):</strong> ${r2.toFixed(6)} → <span class="badge ${r2 >= 0.99 ? 'badge-good' : r2 >= 0.95 ? 'badge-warning' : 'badge-bad'}">${linearityGrade}</span></li>
+                <li><strong>회귀 방정식:</strong> A = ${slope.toFixed(2)} × c + ${intercept >= 0 ? '+' : ''}${intercept.toFixed(4)}</li>
+                <li><strong>해석:</strong> ${linearityDesc}</li>
+                <li><strong>유효 데이터 포인트:</strong> ${validPairs.length}개</li>
+            </ul>
+        </div>
+        <div class="analysis-box" style="margin-top:0.75rem; border-left-color: var(--success);">
+            <h4>선형 범위 확인</h4>
+            <p>Beer-Lambert 법칙은 일반적으로 흡광도 0.2~1.0 범위에서 잘 성립합니다.
+            흡광도가 너무 높으면 (>1.5) 빛이 거의 통과하지 못해 비선형 영역에 진입합니다.
+            고농도 웰(A1, A2)에서 비선형 편차가 관찰될 수 있으며, 이 경우 해당 데이터를 제외하고 회귀분석하는 것이 바람직합니다.</p>
+        </div>
+    `;
+
+    // Accuracy
+    const epsilonCalc = slope / getPathLength();
+    const epsilonError = ((epsilonCalc - getEpsilon()) / getEpsilon() * 100);
+
+    document.getElementById('tab-accuracy').innerHTML = `
+        <div class="analysis-box">
+            <h4>피펫팅 정확도 평가</h4>
+            <ul>
+                <li><strong>평균 오차율:</strong> ${avgError.toFixed(1)}% → <span class="badge ${avgError < 10 ? 'badge-good' : avgError < 25 ? 'badge-warning' : 'badge-bad'}">${avgError < 10 ? '우수' : avgError < 25 ? '보통' : '미흡'}</span></li>
+                ${errors.sort((a,b) => b.absError - a.absError).slice(0,3).map(e =>
+                    `<li><strong>${e.well}:</strong> 오차 ${e.error > 0 ? '+' : ''}${e.error.toFixed(1)}% ${Math.abs(e.error) > 20 ? '⚠️ 큰 오차' : ''}</li>`
+                ).join('')}
+            </ul>
+        </div>
+        <div class="analysis-box" style="margin-top:0.75rem; border-left-color: #f4b400;">
+            <h4>몰 흡광 계수 (ε) 비교</h4>
+            <ul>
+                <li><strong>문헌값 ε:</strong> ${getEpsilon().toLocaleString()} M⁻¹cm⁻¹</li>
+                <li><strong>실험값 ε:</strong> ${epsilonCalc.toFixed(0).toLocaleString()} M⁻¹cm⁻¹</li>
+                <li><strong>편차:</strong> ${epsilonError > 0 ? '+' : ''}${epsilonError.toFixed(1)}%</li>
+                <li><strong>해석:</strong> ${Math.abs(epsilonError) < 15 ? '문헌값과 잘 일치합니다.' : '편차가 크며, 광로 길이 보정이나 용액 준비 과정을 재검토할 필요가 있습니다.'}</li>
+            </ul>
+        </div>
+    `;
+
+    // Precision
+    const measuredValid = [];
+    for (let i = 0; i < 11; i++) {
+        if (measuredData[i] !== null) measuredValid.push(measuredData[i]);
+    }
+    const residuals = validPairs.map(p => p.y - (slope * p.x + intercept));
+    const rmse = Math.sqrt(residuals.reduce((s, r) => s + r*r, 0) / residuals.length);
+    const cv = measuredValid.length > 0
+        ? (standardDeviation(residuals) / (measuredValid.reduce((a,b)=>a+b,0)/measuredValid.length) * 100)
+        : 0;
+
+    document.getElementById('tab-precision').innerHTML = `
+        <div class="analysis-box">
+            <h4>정밀도 (Precision) 평가</h4>
+            <ul>
+                <li><strong>RMSE (잔차 표준오차):</strong> ${rmse.toFixed(5)} A.U.</li>
+                <li><strong>잔차 CV:</strong> ${Math.abs(cv).toFixed(1)}%</li>
+                <li><strong>해석:</strong> ${rmse < 0.05 ? '잔차가 작아 피펫팅 정밀도가 높습니다.' : rmse < 0.15 ? '보통 수준의 정밀도입니다.' : '정밀도 개선이 필요합니다.'}</li>
+            </ul>
+        </div>
+        <div class="analysis-box" style="margin-top:0.75rem; border-left-color: var(--accent);">
+            <h4>오차 누적 효과 (Serial Dilution Error Propagation)</h4>
+            <p>연속 희석에서는 각 단계의 오차가 다음 단계로 전파됩니다.
+            예를 들어 각 단계에서 ±${avgError.toFixed(0)}%의 오차가 있다면,
+            10단계 후 최대 누적 오차는 이론적으로 ±${(Math.pow(1 + avgError/100, 10) * 100 - 100).toFixed(0)}%에 달할 수 있습니다.
+            실제로는 양/음 오차가 일부 상쇄되므로 이보다 작을 수 있습니다.</p>
+        </div>
+    `;
+
+    // Beer-Lambert verification
+    document.getElementById('tab-beerlambert').innerHTML = `
+        <div class="analysis-box">
+            <h4>Beer-Lambert 법칙 성립 여부</h4>
+            <ul>
+                <li><strong>법칙 조건:</strong> A = ε × l × c (흡광도는 농도에 비례)</li>
+                <li><strong>검증 결과:</strong> R² = ${r2.toFixed(4)} → ${r2 >= 0.99 ? '선형 관계 성립' : r2 >= 0.95 ? '근사적으로 성립' : '비선형 편차 존재'}</li>
+                <li><strong>y절편:</strong> ${intercept.toFixed(4)} (이상적 값: 0) → ${Math.abs(intercept) < 0.02 ? '원점 통과 조건 충족' : '원점에서 벗어남 — 체계적 오차 존재 가능'}</li>
+            </ul>
+        </div>
+        <div class="analysis-box" style="margin-top:0.75rem; border-left-color: var(--error);">
+            <h4>비선형 영역 분석</h4>
+            <p>Beer-Lambert 법칙이 깨지는 주요 원인:</p>
+            <ul>
+                <li><strong>고농도:</strong> 흡광도 > 1.5일 때 빛이 과도하게 흡수되어 검출기 한계에 도달</li>
+                <li><strong>분자간 상호작용:</strong> 고농도에서 메틸렌 블루 분자의 이합체(dimer) 형성</li>
+                <li><strong>산란:</strong> 미세 입자에 의한 빛 산란이 흡광도에 영향</li>
+                <li><strong>광원 다색성:</strong> 완전히 단색광이 아닌 경우 편차 발생</li>
+            </ul>
+        </div>
+    `;
+}
+
+function standardDeviation(arr) {
+    const mean = arr.reduce((a, b) => a + b, 0) / arr.length;
+    return Math.sqrt(arr.reduce((s, v) => s + (v - mean) ** 2, 0) / arr.length);
+}
+
+// ============ TAB SWITCHING ============
+function switchTab(tabName) {
+    document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+    document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
+    document.getElementById(`tab-${tabName}`).classList.add('active');
+    event.target.classList.add('active');
+}
+
+// ============ SAMPLE DATA ============
+function loadSampleData() {
+    // Realistic sample data with some experimental error
+    const sampleAbsorbances = [
+        2.850,  // A1: 원액 (may be saturated)
+        1.420,  // A2
+        0.715,  // A3
+        0.362,  // A4
+        0.178,  // A5
+        0.092,  // A6
+        0.048,  // A7
+        0.026,  // A8
+        0.015,  // A9
+        0.009,  // A10
+        0.006,  // A11
+        0.003   // A12: blank
+    ];
+
+    for (let i = 0; i < 12; i++) {
+        measuredData[i] = sampleAbsorbances[i];
+    }
+    updateAll();
+}
+
+function clearData() {
+    measuredData = new Array(12).fill(null);
+    updateAll();
+}
+
+// ============ CSV EXPORT ============
+function exportCSV() {
+    const unit = document.getElementById('concUnit').value;
+    const concs = getConcentrations(unit);
+    const concsMol = getConcentrations('mol');
+    const blankVal = measuredData[11] !== null ? measuredData[11] : 0;
+
+    let csv = 'Well,Dilution Step,Dilution Factor,Concentration (' + (unit === 'mol' ? 'mol/L' : 'mg/mL') + '),Theoretical Abs,Measured Abs,Corrected Abs,Error (%)\n';
+
+    for (let i = 0; i < 12; i++) {
+        const theoA = i < 11 ? theoreticalAbsorbance(concsMol[i]) : 0;
+        const measured = measuredData[i] !== null ? measuredData[i] : '';
+        const corrected = measuredData[i] !== null ? Math.max(0, measuredData[i] - blankVal) : '';
+        const error = (i < 11 && corrected !== '' && theoA > 0) ? ((corrected - theoA) / theoA * 100).toFixed(2) : '';
+        const factor = DILUTION_FACTORS[i] === Infinity ? 'Inf' : DILUTION_FACTORS[i];
+
+        csv += `${WELLS[i]},${DILUTION_LABELS[i]},${factor},${concs[i].toExponential(4)},${theoA.toFixed(4)},${measured},${corrected !== '' ? corrected.toFixed(4) : ''},${error}\n`;
+    }
+
+    const blob = new Blob(['\ufeff' + csv], { type: 'text/csv;charset=utf-8;' });
+    const link = document.createElement('a');
+    link.href = URL.createObjectURL(blob);
+    link.download = `methylene_blue_analysis_${new Date().toISOString().slice(0,10)}.csv`;
+    link.click();
+}
+
+// ============ INIT ============
+window.addEventListener('load', init);
+</script>
+
+</body>
+</html>
