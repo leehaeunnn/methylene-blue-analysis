@@ -4,878 +4,619 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>MB Spectral Analyzer</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-annotation@2.2.1/dist/chartjs-plugin-annotation.min.js"></script>
 <style>
-:root{--p:#1565c0;--pl:#e3f2fd;--pa:#0d47a1;--bg:#f4f6f9;--card:#fff;--tx:#1a1a2e;--ts:#5f6368;--bd:#dfe1e5;--ok:#0f9d58;--wn:#f9a825;--er:#d32f2f;--r:10px}
 *{margin:0;padding:0;box-sizing:border-box}
-body{font-family:'Segoe UI',system-ui,sans-serif;background:var(--bg);color:var(--tx);line-height:1.6;font-size:14px}
-.hdr{background:linear-gradient(135deg,#0a1628 0%,#0d47a1 40%,#1565c0 70%,#1e88e5 100%);color:#fff;padding:1.6rem 1.5rem;text-align:center;position:relative;overflow:hidden}
-.hdr::after{content:'';position:absolute;inset:0;background:url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23ffffff' fill-opacity='0.03'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E")}
-.hdr h1{font-size:1.5rem;font-weight:800;position:relative;z-index:1;letter-spacing:-.5px}
-.hdr .sub{font-size:.85rem;opacity:.85;margin-top:.3rem;position:relative;z-index:1}
-.ctr{max-width:1300px;margin:0 auto;padding:1rem}
+:root{
+  --bg:#06080f;--bg2:#0c1220;--bg3:#111827;--card:#151d2e;--card2:#1a2438;
+  --bdr:#1e2d47;--bdr2:#2a3a58;
+  --t1:#f0f4fc;--t2:#94a3c4;--t3:#607090;
+  --ac:#3b82f6;--ac2:#60a5fa;--acg:linear-gradient(135deg,#3b82f6,#8b5cf6);
+  --ok:#10b981;--okg:#065f46;--wn:#f59e0b;--wng:#92400e;--er:#ef4444;--erg:#991b1b;
+  --glass:rgba(15,23,42,.6);--glassbdr:rgba(255,255,255,.06);
+  --r:16px;--r2:12px;--r3:8px;
+  --shadow:0 4px 24px rgba(0,0,0,.3),0 1px 4px rgba(0,0,0,.2);
+  --glow:0 0 30px rgba(59,130,246,.15);
+}
+body{font-family:'Inter',system-ui,sans-serif;background:var(--bg);color:var(--t1);line-height:1.6;font-size:14px;overflow-x:hidden}
 
-/* Upload zone */
-.upload-zone{border:3px dashed var(--p);border-radius:16px;padding:2.5rem 2rem;text-align:center;cursor:pointer;transition:all .3s;background:linear-gradient(135deg,#f8fbff,#e3f2fd);margin-bottom:1rem;position:relative}
-.upload-zone:hover,.upload-zone.drag{border-color:var(--pa);background:linear-gradient(135deg,#e3f2fd,#bbdefb);transform:scale(1.005)}
-.upload-zone .icon{font-size:3rem;margin-bottom:.5rem}
-.upload-zone h3{font-size:1.1rem;color:var(--pa)}
-.upload-zone p{font-size:.82rem;color:var(--ts);margin-top:.3rem}
-.upload-zone input{position:absolute;inset:0;opacity:0;cursor:pointer}
+/* ===== HEADER ===== */
+.hero{position:relative;padding:3rem 2rem 2.5rem;overflow:hidden;text-align:center}
+.hero-bg{position:absolute;inset:0;background:linear-gradient(135deg,#0f172a 0%,#1e1b4b 30%,#1e3a5f 60%,#0f172a 100%)}
+.hero-mesh{position:absolute;inset:0;opacity:.15;background:
+  radial-gradient(at 20% 30%,#3b82f6 0,transparent 50%),
+  radial-gradient(at 80% 70%,#8b5cf6 0,transparent 50%),
+  radial-gradient(at 50% 50%,#06b6d4 0,transparent 60%)}
+.hero-grid{position:absolute;inset:0;opacity:.06;background-image:linear-gradient(rgba(255,255,255,.1) 1px,transparent 1px),linear-gradient(90deg,rgba(255,255,255,.1) 1px,transparent 1px);background-size:60px 60px}
+canvas#heroCanvas{position:absolute;inset:0;z-index:1}
+.hero-content{position:relative;z-index:2}
+.hero h1{font-size:2.2rem;font-weight:900;letter-spacing:-1px;background:linear-gradient(135deg,#f0f4fc 0%,#60a5fa 50%,#a78bfa 100%);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
+.hero .sub{color:var(--t2);font-size:.9rem;margin-top:.4rem;font-weight:400}
+.hero .tags{display:flex;justify-content:center;gap:.5rem;margin-top:1rem;flex-wrap:wrap}
+.tag{padding:.25rem .75rem;border-radius:20px;font-size:.72rem;font-weight:600;border:1px solid var(--bdr2);background:var(--glass);backdrop-filter:blur(10px);color:var(--t2)}
 
-/* Nav */
-.nav{display:flex;gap:0;background:var(--card);border-radius:var(--r);overflow-x:auto;margin-bottom:1rem;box-shadow:0 1px 3px rgba(0,0,0,.08);border:1px solid var(--bd)}
-.nav-btn{flex:1;min-width:100px;padding:.6rem .4rem;text-align:center;cursor:pointer;font-weight:600;font-size:.75rem;color:var(--ts);border:none;background:none;transition:all .2s;border-bottom:3px solid transparent;white-space:nowrap}
-.nav-btn:hover{background:var(--pl);color:var(--p)}
-.nav-btn.act{color:var(--p);border-bottom-color:var(--p);background:var(--pl)}
-.nav-btn .ni{display:block;font-size:1.1rem;margin-bottom:1px}
+/* ===== LAYOUT ===== */
+.ctr{max-width:1360px;margin:0 auto;padding:0 1rem 2rem}
 
-.page{display:none}.page.act{display:block}
+/* ===== UPLOAD ===== */
+.upload{position:relative;margin:-1.5rem 1rem 1.5rem;z-index:10;border-radius:var(--r);background:var(--card);border:2px dashed var(--bdr2);padding:2.5rem 2rem;text-align:center;cursor:pointer;transition:all .4s cubic-bezier(.4,0,.2,1);box-shadow:var(--shadow)}
+.upload:hover,.upload.drag{border-color:var(--ac);background:var(--card2);box-shadow:var(--shadow),var(--glow);transform:translateY(-2px)}
+.upload .ic{font-size:2.5rem;margin-bottom:.6rem;filter:grayscale(.3)}
+.upload h3{font-size:1.1rem;font-weight:700;color:var(--t1)}
+.upload p{font-size:.8rem;color:var(--t3);margin-top:.2rem}
+.upload input{position:absolute;inset:0;opacity:0;cursor:pointer}
+.upload-actions{display:flex;justify-content:center;gap:.5rem;margin-top:1rem;flex-wrap:wrap}
 
-/* Cards */
-.cd{background:var(--card);border-radius:var(--r);padding:1.2rem;margin-bottom:1rem;box-shadow:0 1px 3px rgba(0,0,0,.06);border:1px solid var(--bd)}
-.cd h2{font-size:1rem;color:var(--pa);margin-bottom:.7rem;padding-bottom:.4rem;border-bottom:2px solid var(--pl);display:flex;align-items:center;gap:.4rem}
-.cd h3{font-size:.9rem;color:var(--p);margin:.8rem 0 .4rem}
+/* ===== BUTTONS ===== */
+.btn{padding:.5rem 1.1rem;border:none;border-radius:var(--r3);font-size:.8rem;font-weight:600;font-family:inherit;cursor:pointer;transition:all .25s;display:inline-flex;align-items:center;gap:.35rem}
+.btn-p{background:var(--acg);color:#fff;box-shadow:0 2px 12px rgba(59,130,246,.3)}
+.btn-p:hover{transform:translateY(-1px);box-shadow:0 4px 20px rgba(59,130,246,.4)}
+.btn-g{background:var(--card2);color:var(--t2);border:1px solid var(--bdr2)}
+.btn-g:hover{border-color:var(--ac);color:var(--ac2)}
+.btn-sm{padding:.35rem .7rem;font-size:.72rem}
+.btns{display:flex;gap:.4rem;flex-wrap:wrap}
 
-/* Tables */
+/* ===== NAV ===== */
+.nav{display:none;gap:2px;margin-bottom:1.5rem;padding:4px;background:var(--card);border-radius:var(--r);box-shadow:var(--shadow);border:1px solid var(--bdr)}
+.nav.show{display:flex}
+.nav-btn{flex:1;min-width:80px;padding:.65rem .3rem;text-align:center;cursor:pointer;font-weight:600;font-size:.72rem;color:var(--t3);border:none;background:none;border-radius:var(--r2);transition:all .3s;font-family:inherit;position:relative}
+.nav-btn:hover{color:var(--t2);background:rgba(59,130,246,.05)}
+.nav-btn.act{color:var(--ac2);background:rgba(59,130,246,.1);box-shadow:inset 0 0 0 1px rgba(59,130,246,.2)}
+.nav-btn .ni{display:block;font-size:1.2rem;margin-bottom:2px}
+.nav-btn .badge{position:absolute;top:4px;right:4px;width:8px;height:8px;border-radius:50%;background:var(--ok)}
+
+/* ===== PAGES ===== */
+.page{display:none;animation:fadeUp .4s ease}.page.act{display:block}
+@keyframes fadeUp{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:none}}
+
+/* ===== CARDS ===== */
+.cd{background:var(--card);border-radius:var(--r);padding:1.5rem;margin-bottom:1.2rem;border:1px solid var(--bdr);box-shadow:var(--shadow);transition:border-color .3s}
+.cd:hover{border-color:var(--bdr2)}
+.cd h2{font-size:1rem;font-weight:700;color:var(--t1);margin-bottom:1rem;display:flex;align-items:center;gap:.5rem}
+.cd h2::before{content:'';width:3px;height:1.2em;border-radius:2px;background:var(--acg)}
+.cd h3{font-size:.88rem;font-weight:600;color:var(--t2);margin:.8rem 0 .4rem}
+
+/* ===== TABLES ===== */
+.tbl-wrap{overflow-x:auto;border-radius:var(--r2);border:1px solid var(--bdr);margin:.5rem 0}
 table{width:100%;border-collapse:collapse;font-size:.8rem}
-th{background:var(--p);color:#fff;padding:.45rem .35rem;text-align:center;font-weight:600;font-size:.74rem;white-space:nowrap}
-th:first-child{border-radius:var(--r) 0 0 0}th:last-child{border-radius:0 var(--r) 0 0}
-td{padding:.4rem .35rem;text-align:center;border-bottom:1px solid var(--bd)}
-tr:nth-child(even){background:#f8f9fa}tr:hover{background:var(--pl)}
+th{background:var(--bg3);color:var(--t2);padding:.6rem .5rem;font-weight:600;font-size:.72rem;text-transform:uppercase;letter-spacing:.5px;border-bottom:1px solid var(--bdr)}
+td{padding:.5rem;text-align:center;border-bottom:1px solid rgba(30,45,71,.5);color:var(--t2)}
+tr:hover td{background:rgba(59,130,246,.03)}
+td:first-child{font-weight:600;color:var(--t1)}
 
-.btn{padding:.45rem 1rem;border:none;border-radius:8px;font-size:.82rem;font-weight:600;cursor:pointer;transition:all .2s;display:inline-flex;align-items:center;gap:.3rem}
-.btn-p{background:var(--p);color:#fff}.btn-p:hover{background:var(--pa);transform:translateY(-1px);box-shadow:0 3px 8px rgba(21,101,192,.3)}
-.btn-s{background:#fff;color:var(--p);border:1.5px solid var(--p)}.btn-s:hover{background:var(--pl)}
-.btn-sm{padding:.3rem .7rem;font-size:.76rem}
-.btns{display:flex;gap:.5rem;flex-wrap:wrap;margin-top:.7rem}
+/* ===== STATS ===== */
+.stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:.8rem;margin:.8rem 0}
+.stat{background:var(--card2);border:1px solid var(--bdr);border-radius:var(--r2);padding:1rem .8rem;text-align:center;position:relative;overflow:hidden;transition:all .3s}
+.stat:hover{border-color:var(--ac);transform:translateY(-2px);box-shadow:var(--glow)}
+.stat::before{content:'';position:absolute;top:0;left:0;right:0;height:2px;background:var(--acg);opacity:0;transition:opacity .3s}
+.stat:hover::before{opacity:1}
+.stat .v{font-size:1.6rem;font-weight:800;font-family:'JetBrains Mono',monospace;background:var(--acg);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
+.stat.good .v{background:linear-gradient(135deg,#10b981,#34d399);-webkit-background-clip:text;background-clip:text}
+.stat.warn .v{background:linear-gradient(135deg,#f59e0b,#fbbf24);-webkit-background-clip:text;background-clip:text}
+.stat.bad .v{background:linear-gradient(135deg,#ef4444,#f87171);-webkit-background-clip:text;background-clip:text}
+.stat .l{font-size:.7rem;color:var(--t3);margin-top:.2rem;font-weight:500}
 
-.g2{display:grid;grid-template-columns:1fr 1fr;gap:1rem}
-.g3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:1rem}
-.g4{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:.7rem}
+/* ===== CHARTS ===== */
+.grid{display:grid;gap:1.2rem}
+.g2{grid-template-columns:1fr 1fr}
+.g3{grid-template-columns:1fr 1fr 1fr}
 @media(max-width:900px){.g2,.g3{grid-template-columns:1fr}}
+.ch-card{background:var(--card);border:1px solid var(--bdr);border-radius:var(--r);padding:1.2rem;box-shadow:var(--shadow)}
+.ch-card h3{font-size:.85rem;font-weight:600;color:var(--t2);margin-bottom:.8rem;text-align:center}
+.ch{position:relative;height:320px}
 
-.ch{position:relative;height:300px}
+/* ===== ANALYSIS BLOCKS ===== */
+.abox{border-radius:var(--r2);padding:1rem 1.2rem;margin:.6rem 0;font-size:.83rem;line-height:1.8;border:1px solid}
+.abox h4{font-weight:700;margin-bottom:.3rem;font-size:.88rem}
+.abox ul{padding-left:1.1rem}.abox li{margin-bottom:.15rem}
+.abox.info{background:rgba(59,130,246,.06);border-color:rgba(59,130,246,.15);color:var(--ac2)}
+.abox.info h4{color:var(--ac2)}
+.abox.ok{background:rgba(16,185,129,.06);border-color:rgba(16,185,129,.15);color:#6ee7b7}
+.abox.ok h4{color:#34d399}
+.abox.wn{background:rgba(245,158,11,.06);border-color:rgba(245,158,11,.15);color:#fcd34d}
+.abox.wn h4{color:#fbbf24}
+.abox.er{background:rgba(239,68,68,.06);border-color:rgba(239,68,68,.15);color:#fca5a5}
+.abox.er h4{color:#f87171}
+.abox.purple{background:rgba(139,92,246,.06);border-color:rgba(139,92,246,.15);color:#c4b5fd}
+.abox.purple h4{color:#a78bfa}
 
-.st{background:linear-gradient(135deg,var(--pl),#fff);border-radius:var(--r);padding:.7rem;text-align:center;border:1px solid var(--bd)}
-.st .v{font-size:1.3rem;font-weight:700;color:var(--pa)}
-.st .l{font-size:.7rem;color:var(--ts);margin-top:.1rem}
-.st.good .v{color:var(--ok)}.st.warn .v{color:var(--wn)}.st.bad .v{color:var(--er)}
+.badge{display:inline-block;padding:.15rem .5rem;border-radius:12px;font-size:.68rem;font-weight:700;letter-spacing:.3px}
+.badge-ok{background:rgba(16,185,129,.15);color:#34d399}
+.badge-wn{background:rgba(245,158,11,.15);color:#fbbf24}
+.badge-er{background:rgba(239,68,68,.15);color:#f87171}
 
-.ab{background:#f0f7ff;border-left:4px solid var(--p);padding:.7rem 1rem;border-radius:0 8px 8px 0;margin:.5rem 0;font-size:.83rem;line-height:1.7}
-.ab h4{color:var(--pa);margin-bottom:.2rem;font-size:.88rem}
-.ab ul{padding-left:1rem}.ab li{margin-bottom:.15rem}
-.ab.ok{border-left-color:var(--ok);background:#f0faf4}
-.ab.wn{border-left-color:var(--wn);background:#fffbf0}
-.ab.er{border-left-color:var(--er);background:#fef0f0}
+/* ===== WELL PLATE ===== */
+.plate-box{background:var(--bg2);border-radius:var(--r);padding:1.2rem;border:1px solid var(--bdr)}
+.plate{display:flex;gap:6px;justify-content:center;flex-wrap:nowrap;overflow-x:auto;padding:.5rem 0}
+.well{width:56px;height:56px;border-radius:50%;display:flex;flex-direction:column;align-items:center;justify-content:center;flex-shrink:0;transition:all .3s cubic-bezier(.4,0,.2,1);cursor:pointer;position:relative;border:2px solid rgba(255,255,255,.08);box-shadow:inset 0 2px 8px rgba(0,0,0,.3),0 2px 6px rgba(0,0,0,.2)}
+.well:hover{transform:scale(1.18) translateY(-3px);box-shadow:0 8px 24px rgba(0,0,0,.4),inset 0 2px 8px rgba(0,0,0,.2);z-index:10;border-color:rgba(255,255,255,.2)}
+.well span{font-size:.65rem;font-weight:700;text-shadow:0 1px 3px rgba(0,0,0,.5)}
+.well .wc{font-size:.5rem;opacity:.8}
 
-.bg{display:inline-block;padding:.1rem .4rem;border-radius:10px;font-size:.7rem;font-weight:600}
-.bg-ok{background:#e6f4ea;color:var(--ok)}.bg-wn{background:#fef7e0;color:#e37400}.bg-er{background:#fce8e6;color:var(--er)}
+/* ===== HEATMAP ===== */
+.hm{display:grid;gap:3px;margin:.5rem 0}
+.hm-row{display:grid;gap:3px;align-items:center}
+.hm-cell{padding:.45rem .2rem;text-align:center;font-size:.72rem;font-weight:700;border-radius:6px;color:#fff;text-shadow:0 1px 2px rgba(0,0,0,.4);min-height:38px;display:flex;align-items:center;justify-content:center;transition:all .3s;cursor:default;font-family:'JetBrains Mono',monospace}
+.hm-cell:hover{transform:scale(1.08);z-index:5;box-shadow:0 4px 12px rgba(0,0,0,.4)}
+.hm-label{font-size:.75rem;font-weight:600;color:var(--t3);display:flex;align-items:center}
 
-.hm-cell{padding:.35rem .15rem;text-align:center;font-size:.7rem;font-weight:600;border-radius:4px;color:#fff;text-shadow:0 1px 1px rgba(0,0,0,.3);min-height:32px;display:flex;align-items:center;justify-content:center}
+/* ===== PROGRESS ===== */
+.prog{display:flex;gap:4px;margin:.8rem 0;padding:4px;background:var(--bg2);border-radius:var(--r3);border:1px solid var(--bdr)}
+.prog-s{flex:1;text-align:center;padding:.5rem .3rem;font-size:.7rem;font-weight:600;color:var(--t3);border-radius:6px;transition:all .4s}
+.prog-s.done{background:rgba(16,185,129,.1);color:#34d399}
+.prog-s.cur{background:rgba(59,130,246,.1);color:var(--ac2);animation:pulse2 1.5s infinite}
+@keyframes pulse2{0%,100%{opacity:1}50%{opacity:.6}}
 
-.tabs{display:flex;gap:0;border-bottom:2px solid var(--bd);margin-bottom:.7rem}
-.tab{padding:.45rem .9rem;cursor:pointer;font-weight:600;font-size:.8rem;color:var(--ts);border-bottom:2px solid transparent;margin-bottom:-2px;transition:all .2s}
-.tab:hover{color:var(--p)}.tab.act{color:var(--p);border-bottom-color:var(--p)}
-.tc{display:none}.tc.act{display:block}
+/* ===== BO LIST ===== */
+.bo-item{display:flex;align-items:center;gap:.5rem;padding:.35rem .6rem;border-radius:var(--r3);margin:.2rem 0;font-size:.75rem;transition:all .2s;border:1px solid transparent}
+.bo-item:hover{background:rgba(59,130,246,.05);border-color:var(--bdr)}
+.bo-item.best{background:rgba(16,185,129,.06);border-color:rgba(16,185,129,.15)}
+.bo-bar{height:4px;background:var(--bg2);border-radius:2px;flex:1;overflow:hidden}
+.bo-fill{height:100%;border-radius:2px;transition:width .4s}
 
-.prog{display:flex;gap:0;margin:.8rem 0}
-.prog-step{flex:1;text-align:center;padding:.4rem;font-size:.72rem;font-weight:600;position:relative;color:var(--ts)}
-.prog-step::after{content:'';position:absolute;bottom:0;left:0;right:0;height:3px;background:var(--bd);border-radius:2px}
-.prog-step.done::after{background:var(--ok)}.prog-step.cur::after{background:var(--p)}
-.prog-step.done{color:var(--ok)}.prog-step.cur{color:var(--p)}
+/* ===== SURFACE TABS ===== */
+.stabs{display:flex;gap:4px;padding:4px;background:var(--bg2);border-radius:var(--r3);margin-bottom:1rem;border:1px solid var(--bdr)}
+.stab{flex:1;text-align:center;padding:.45rem;font-size:.78rem;font-weight:600;color:var(--t3);cursor:pointer;border-radius:6px;transition:all .3s}
+.stab:hover{color:var(--t2)}.stab.act{background:var(--card2);color:var(--ac2);box-shadow:0 2px 8px rgba(0,0,0,.2)}
+.stc{display:none}.stc.act{display:block}
 
-.bo-iter{display:flex;align-items:center;gap:.4rem;padding:.25rem .4rem;border-radius:5px;margin:.15rem 0;font-size:.75rem}
-.bo-iter:hover{background:var(--pl)}
-.bo-bar{height:5px;background:var(--bd);border-radius:3px;flex:1;overflow:hidden}
-.bo-fill{height:100%;border-radius:3px;transition:width .3s}
+/* ===== STATUS BAR ===== */
+.status{display:flex;align-items:center;gap:.6rem;padding:.7rem 1rem;border-radius:var(--r2);font-size:.82rem;font-weight:600;margin-bottom:1rem;border:1px solid;animation:fadeUp .3s}
+.status.ok{background:rgba(16,185,129,.08);border-color:rgba(16,185,129,.2);color:#6ee7b7}
+.status.wn{background:rgba(245,158,11,.08);border-color:rgba(245,158,11,.2);color:#fcd34d}
+.status .dot{width:8px;height:8px;border-radius:50%;flex-shrink:0}
+.status.ok .dot{background:#10b981;box-shadow:0 0 8px #10b981}.status.wn .dot{background:#f59e0b;box-shadow:0 0 8px #f59e0b}
 
-.template-info{background:#fffde7;border:1px solid #fff9c4;border-radius:var(--r);padding:1rem;margin-bottom:1rem;font-size:.82rem}
-.template-info code{background:#f5f5f5;padding:.15rem .4rem;border-radius:4px;font-size:.78rem}
+/* ===== TEMPLATE BAR ===== */
+.tmpl{background:var(--card2);border:1px solid var(--bdr);border-radius:var(--r2);padding:.8rem 1rem;margin-bottom:1rem;font-size:.78rem;color:var(--t3)}
+.tmpl strong{color:var(--t2)}
+.tmpl code{background:var(--bg2);padding:.15rem .4rem;border-radius:4px;font-size:.72rem;color:var(--ac2);font-family:'JetBrains Mono',monospace}
 
-.status-bar{display:flex;align-items:center;gap:.5rem;padding:.5rem .8rem;border-radius:8px;font-size:.82rem;font-weight:600;margin-bottom:.8rem}
-.status-bar.ok{background:#e8f5e9;color:var(--ok)}.status-bar.wn{background:#fff8e1;color:#e65100}.status-bar.er{background:#ffebee;color:var(--er)}
+.footer{text-align:center;padding:2rem 1rem;color:var(--t3);font-size:.72rem;border-top:1px solid var(--bdr);margin-top:2rem}
 
-.footer{text-align:center;padding:1rem;color:var(--ts);font-size:.72rem}
-@media print{.nav,.btns,.upload-zone{display:none!important}.page{display:block!important}.cd{break-inside:avoid}}
-::-webkit-scrollbar{height:5px;width:5px}::-webkit-scrollbar-thumb{background:#bbb;border-radius:3px}
+@media print{.hero,.nav,.upload,.tmpl,.btns,.footer{display:none!important}.page{display:block!important}.cd,.ch-card{break-inside:avoid;background:#fff;color:#000;border-color:#ddd}}
 </style>
 </head>
 <body>
 
-<div class="hdr">
-<h1>MB Spectral Analyzer</h1>
-<div class="sub">CSV/Excel 업로드 → 자동 분석 · Beer-Lambert 검증 · ANOVA · AI4SE Optimization</div>
+<!-- HERO -->
+<div class="hero">
+  <div class="hero-bg"></div><div class="hero-mesh"></div><div class="hero-grid"></div>
+  <canvas id="heroCanvas"></canvas>
+  <div class="hero-content">
+    <h1>MB Spectral Analyzer</h1>
+    <p class="sub">환경 조건별 메틸렌블루 흡광 스펙트럼 자동 분석 · AI4SE 기반 최적 조건 탐색</p>
+    <div class="tags">
+      <span class="tag">Beer-Lambert Law</span>
+      <span class="tag">Serial Dilution</span>
+      <span class="tag">ANOVA</span>
+      <span class="tag">Ridge Regression</span>
+      <span class="tag">Bayesian Optimization</span>
+      <span class="tag">Anomaly Detection</span>
+    </div>
+  </div>
 </div>
 
 <div class="ctr">
 
-<!-- Upload Zone -->
-<div class="upload-zone" id="dropZone">
-<div class="icon">📂</div>
-<h3>CSV 파일을 드래그하거나 클릭하여 업로드</h3>
-<p>Phase별 개별 업로드 또는 통합 데이터 파일 지원 · 자동으로 Phase 감지</p>
-<p style="margin-top:.5rem;font-size:.78rem;color:var(--p)">지원 형식: .csv (UTF-8) — 아래 템플릿 참고</p>
-<input type="file" id="fileInput" accept=".csv" multiple>
+<!-- UPLOAD -->
+<div class="upload" id="dropZone">
+  <div class="ic">📂</div>
+  <h3>CSV 파일 드래그 & 드롭 또는 클릭</h3>
+  <p>Phase별 개별 파일 또는 통합 데이터 파일 자동 감지</p>
+  <input type="file" id="fileInput" accept=".csv" multiple>
+  <div class="upload-actions">
+    <button class="btn btn-sm btn-g" onclick="event.stopPropagation();downloadTemplate('basic')">기본측정 템플릿</button>
+    <button class="btn btn-sm btn-g" onclick="event.stopPropagation();downloadTemplate('phase1')">Phase1</button>
+    <button class="btn btn-sm btn-g" onclick="event.stopPropagation();downloadTemplate('phase2')">Phase2</button>
+    <button class="btn btn-sm btn-g" onclick="event.stopPropagation();downloadTemplate('phase3')">Phase3</button>
+    <button class="btn btn-sm btn-g" onclick="event.stopPropagation();downloadTemplate('unified')">통합</button>
+    <button class="btn btn-sm btn-p" onclick="event.stopPropagation();loadDemo()">데모 데이터 분석</button>
+  </div>
 </div>
 
-<div class="template-info">
-<strong>CSV 템플릿 안내</strong> — 아래 형식으로 데이터를 준비하세요. <button class="btn btn-sm btn-s" onclick="downloadTemplate('basic')" style="margin-left:.3rem">기본 측정 템플릿</button>
-<button class="btn btn-sm btn-s" onclick="downloadTemplate('phase1')">Phase 1 템플릿</button>
-<button class="btn btn-sm btn-s" onclick="downloadTemplate('phase2')">Phase 2 템플릿</button>
-<button class="btn btn-sm btn-s" onclick="downloadTemplate('phase3')">Phase 3 템플릿</button>
-<button class="btn btn-sm btn-s" onclick="downloadTemplate('unified')">통합 템플릿</button>
-<button class="btn btn-sm btn-p" onclick="loadDemo()" style="margin-left:.5rem">데모 데이터로 분석</button>
-<div style="margin-top:.5rem">
-<strong>통합 파일 형식:</strong> <code>wavelength,temperature,pH,concentration_uM,absorbance</code><br>
-<strong>기본 측정:</strong> <code>well,absorbance</code> &nbsp;|&nbsp; <strong>Phase 1:</strong> <code>concentration_uM,550nm,600nm,630nm,664nm,700nm</code><br>
-<strong>Phase 2:</strong> <code>temperature_C,λ1nm,λ2nm,λ3nm</code> &nbsp;|&nbsp; <strong>Phase 3:</strong> <code>pH,λ1nm,λ2nm,λ3nm</code>
-</div>
+<div class="tmpl">
+  <strong>CSV 형식 안내</strong><br>
+  통합: <code>wavelength,temperature,pH,concentration_uM,absorbance</code> ·
+  기본: <code>well,absorbance</code> ·
+  Phase1: <code>concentration_uM,550nm,600nm,630nm,664nm,700nm</code> ·
+  Phase2: <code>temperature_C,630nm,664nm,700nm</code> ·
+  Phase3: <code>pH,630nm,664nm,700nm</code>
 </div>
 
-<!-- Status -->
 <div id="statusBar"></div>
 
-<!-- Navigation (hidden until data loaded) -->
-<div class="nav" id="nav" style="display:none">
-<button class="nav-btn act" onclick="go(0)"><span class="ni">🧫</span>기본 측정</button>
-<button class="nav-btn" onclick="go(1)"><span class="ni">🌈</span>Phase 1</button>
-<button class="nav-btn" onclick="go(2)"><span class="ni">🌡️</span>Phase 2</button>
-<button class="nav-btn" onclick="go(3)"><span class="ni">⚗️</span>Phase 3</button>
-<button class="nav-btn" onclick="go(4)"><span class="ni">🤖</span>AI4SE</button>
-<button class="nav-btn" onclick="go(5)"><span class="ni">📊</span>보고서</button>
+<!-- NAV -->
+<div class="nav" id="nav">
+  <button class="nav-btn act" onclick="go(0)"><span class="ni">🧫</span>기본 측정<span class="badge" id="b0" style="display:none"></span></button>
+  <button class="nav-btn" onclick="go(1)"><span class="ni">🌈</span>Phase 1<span class="badge" id="b1" style="display:none"></span></button>
+  <button class="nav-btn" onclick="go(2)"><span class="ni">🌡️</span>Phase 2<span class="badge" id="b2" style="display:none"></span></button>
+  <button class="nav-btn" onclick="go(3)"><span class="ni">⚗️</span>Phase 3<span class="badge" id="b3" style="display:none"></span></button>
+  <button class="nav-btn" onclick="go(4)"><span class="ni">🤖</span>AI4SE<span class="badge" id="b4" style="display:none"></span></button>
+  <button class="nav-btn" onclick="go(5)"><span class="ni">📊</span>보고서<span class="badge" id="b5" style="display:none"></span></button>
 </div>
 
-<!-- ===== PAGE 0: Basic ===== -->
+<!-- === P0 === -->
 <div class="page" id="p0">
-<div class="cd">
-<h2>Serial Dilution 분석 (664nm, 25°C, pH 7)</h2>
-<div style="display:flex;gap:5px;justify-content:center;padding:.6rem;background:#f8f9fa;border-radius:8px;overflow-x:auto;margin-bottom:.7rem" id="plateVis"></div>
-<div style="overflow-x:auto"><table><thead><tr><th>웰</th><th>희석</th><th>배수</th><th>농도(mg/mL)</th><th>농도(μM)</th><th>이론 A</th><th>측정 A</th><th>보정 A</th><th>오차(%)</th></tr></thead><tbody id="tb0"></tbody></table></div>
-</div>
-<div class="g4" id="p0sg"></div>
-<div class="g2" style="margin-top:.8rem">
-<div class="cd"><h3 style="text-align:center">농도 vs 흡광도</h3><div class="ch"><canvas id="c0lin"></canvas></div></div>
-<div class="cd"><h3 style="text-align:center">이론 vs 측정 비교</h3><div class="ch"><canvas id="c0bar"></canvas></div></div>
-</div>
-<div class="cd" id="p0analysis"></div>
+  <div class="cd"><h2>96-Well Plate · Serial Dilution (664nm)</h2>
+    <div class="plate-box"><div class="plate" id="plateVis"></div></div>
+  </div>
+  <div class="stats" id="p0s"></div>
+  <div class="cd"><h2>측정 데이터</h2><div class="tbl-wrap"><table><thead><tr><th>Well</th><th>희석</th><th>배수</th><th>mg/mL</th><th>μM</th><th>이론 A</th><th>측정 A</th><th>보정 A</th><th>오차</th></tr></thead><tbody id="tb0"></tbody></table></div></div>
+  <div class="grid g2">
+    <div class="ch-card"><h3>농도 vs 흡광도 (Beer-Lambert)</h3><div class="ch"><canvas id="c0a"></canvas></div></div>
+    <div class="ch-card"><h3>이론 vs 측정 비교</h3><div class="ch"><canvas id="c0b"></canvas></div></div>
+  </div>
+  <div class="cd" id="p0x"></div>
 </div>
 
-<!-- ===== PAGE 1: Wavelength ===== -->
+<!-- === P1 === -->
 <div class="page" id="p1">
-<div class="cd">
-<h2>Phase 1 — 최적 파장 탐색 (25°C, pH 7)</h2>
-<div style="overflow-x:auto"><table><thead><tr><th>농도(μM)</th><th>550nm</th><th>600nm</th><th>630nm</th><th>664nm</th><th>700nm</th></tr></thead><tbody id="tb1"></tbody></table></div>
-</div>
-<div class="g4" id="p1sg"></div>
-<div class="g2" style="margin-top:.8rem">
-<div class="cd"><h3 style="text-align:center">파장별 검량선</h3><div class="ch"><canvas id="c1cal"></canvas></div></div>
-<div class="cd"><h3 style="text-align:center">R² 및 감도 비교</h3><div class="ch"><canvas id="c1sens"></canvas></div></div>
-</div>
-<div class="cd" id="p1anova"></div>
+  <div class="cd"><h2>Phase 1 — 파장별 검량선 (25°C, pH 7)</h2><div class="tbl-wrap"><table><thead><tr><th>μM</th><th>550nm</th><th>600nm</th><th>630nm</th><th>664nm</th><th>700nm</th></tr></thead><tbody id="tb1"></tbody></table></div></div>
+  <div class="stats" id="p1s"></div>
+  <div class="grid g2">
+    <div class="ch-card"><h3>파장별 검량선</h3><div class="ch"><canvas id="c1a"></canvas></div></div>
+    <div class="ch-card"><h3>감도 & R² 비교</h3><div class="ch"><canvas id="c1b"></canvas></div></div>
+  </div>
+  <div class="cd" id="p1x"></div>
 </div>
 
-<!-- ===== PAGE 2: Temperature ===== -->
+<!-- === P2 === -->
 <div class="page" id="p2">
-<div class="cd">
-<h2>Phase 2 — 온도 안정성 (10μM, pH 7)</h2>
-<div style="overflow-x:auto"><table><thead id="th2"></thead><tbody id="tb2"></tbody></table></div>
-</div>
-<div class="g2">
-<div class="cd"><h3 style="text-align:center">온도별 흡광도</h3><div class="ch"><canvas id="c2line"></canvas></div></div>
-<div class="cd"><h3 style="text-align:center">변화율 히트맵 (vs 25°C)</h3><div id="p2hm"></div></div>
-</div>
-<div class="cd" id="p2anova"></div>
+  <div class="cd"><h2>Phase 2 — 온도 안정성</h2><div class="tbl-wrap"><table><thead id="th2"></thead><tbody id="tb2"></tbody></table></div></div>
+  <div class="grid g2">
+    <div class="ch-card"><h3>온도별 흡광도</h3><div class="ch"><canvas id="c2a"></canvas></div></div>
+    <div class="ch-card"><h3>변화율 히트맵 (vs 25°C)</h3><div id="p2hm" style="padding:.5rem"></div></div>
+  </div>
+  <div class="cd" id="p2x"></div>
 </div>
 
-<!-- ===== PAGE 3: pH ===== -->
+<!-- === P3 === -->
 <div class="page" id="p3">
-<div class="cd">
-<h2>Phase 3 — pH 안정성 (10μM, 25°C)</h2>
-<div style="overflow-x:auto"><table><thead id="th3"></thead><tbody id="tb3"></tbody></table></div>
-</div>
-<div class="g2">
-<div class="cd"><h3 style="text-align:center">pH별 흡광도</h3><div class="ch"><canvas id="c3line"></canvas></div></div>
-<div class="cd"><h3 style="text-align:center">pH 변화율 히트맵 (vs pH7)</h3><div id="p3hm"></div></div>
-</div>
-<div class="cd" id="p3anomaly"></div>
-<div class="cd" id="p3anova"></div>
+  <div class="cd"><h2>Phase 3 — pH 안정성</h2><div class="tbl-wrap"><table><thead id="th3"></thead><tbody id="tb3"></tbody></table></div></div>
+  <div class="grid g2">
+    <div class="ch-card"><h3>pH별 흡광도</h3><div class="ch"><canvas id="c3a"></canvas></div></div>
+    <div class="ch-card"><h3>pH 변화율 히트맵 (vs pH 7)</h3><div id="p3hm" style="padding:.5rem"></div></div>
+  </div>
+  <div class="cd" id="p3y"></div>
+  <div class="cd" id="p3x"></div>
 </div>
 
-<!-- ===== PAGE 4: AI4SE ===== -->
+<!-- === P4 === -->
 <div class="page" id="p4">
-<div class="cd">
-<h2>AI4SE 파이프라인</h2>
-<div class="prog" id="aiProg">
-<div class="prog-step">데이터셋 구성</div>
-<div class="prog-step">Ridge 회귀</div>
-<div class="prog-step">Bayesian Opt.</div>
-<div class="prog-step">Anomaly Det.</div>
-</div>
-</div>
-
-<div class="cd">
-<h2>Cross-Domain Analogy</h2>
-<table><thead><tr><th>생물 실험</th><th></th><th>SW Engineering</th><th>AI 기법</th></tr></thead><tbody>
-<tr><td>실험 조건 (λ, T, pH)</td><td>≡</td><td>Configuration Space</td><td>Feature 정의</td></tr>
-<tr><td>흡광도 (A)</td><td>≡</td><td>시스템 성능</td><td>Ridge / Lasso 회귀</td></tr>
-<tr><td>최적 조건 탐색</td><td>≡</td><td>Hyperparameter Tuning</td><td>Bayesian Optimization</td></tr>
-<tr><td>leuco-MB 전환</td><td>≡</td><td>성능 저하 이벤트</td><td>Anomaly Detection</td></tr>
-</tbody></table>
-</div>
-
-<div class="cd"><h2>Ridge 회귀 모델</h2>
-<div class="g2">
-<div><h3 style="text-align:center">예측 vs 실측</h3><div class="ch"><canvas id="c4pred"></canvas></div></div>
-<div><h3 style="text-align:center">Feature Importance</h3><div class="ch"><canvas id="c4feat"></canvas></div></div>
-</div>
-<div class="g4" id="p4ml" style="margin-top:.7rem"></div>
-</div>
-
-<div class="cd"><h2>Bayesian Optimization</h2>
-<div class="g2">
-<div><h3 style="text-align:center">수렴 곡선</h3><div class="ch"><canvas id="c4bo"></canvas></div></div>
-<div><h3>탐색 이력</h3><div id="p4bolist" style="max-height:280px;overflow-y:auto"></div></div>
-</div>
-<div class="ab ok" id="p4boResult"></div>
+  <div class="cd"><h2>AI4SE Pipeline</h2>
+    <div class="prog" id="aiProg"><div class="prog-s">Dataset</div><div class="prog-s">Ridge Regression</div><div class="prog-s">Bayesian Opt.</div><div class="prog-s">Anomaly Det.</div></div>
+  </div>
+  <div class="cd"><h2>Cross-Domain Analogy</h2>
+    <div class="tbl-wrap"><table><thead><tr><th>Biology</th><th></th><th>Software Eng.</th><th>AI Technique</th></tr></thead><tbody>
+    <tr><td>λ, T, pH</td><td style="color:var(--ac2);font-weight:700">≡</td><td>Config Space</td><td>Feature Engineering</td></tr>
+    <tr><td>Absorbance</td><td style="color:var(--ac2);font-weight:700">≡</td><td>Performance</td><td>Ridge / Lasso</td></tr>
+    <tr><td>Optimal Cond.</td><td style="color:var(--ac2);font-weight:700">≡</td><td>Hyperparameter</td><td>Bayesian Opt.</td></tr>
+    <tr><td>leuco-MB</td><td style="color:var(--ac2);font-weight:700">≡</td><td>Perf. Degradation</td><td>Anomaly Det.</td></tr>
+    </tbody></table></div>
+  </div>
+  <div class="stats" id="p4s"></div>
+  <div class="grid g2">
+    <div class="ch-card"><h3>Predicted vs Actual</h3><div class="ch"><canvas id="c4a"></canvas></div></div>
+    <div class="ch-card"><h3>Feature Importance</h3><div class="ch"><canvas id="c4b"></canvas></div></div>
+  </div>
+  <div class="cd"><h2>Bayesian Optimization</h2>
+    <div class="grid g2">
+      <div><h3 style="font-size:.85rem;color:var(--t2);margin-bottom:.6rem">Convergence</h3><div class="ch"><canvas id="c4c"></canvas></div></div>
+      <div><h3 style="font-size:.85rem;color:var(--t2);margin-bottom:.6rem">Search History</h3><div id="boList" style="max-height:310px;overflow-y:auto"></div></div>
+    </div>
+    <div id="boRes" style="margin-top:.8rem"></div>
+  </div>
+  <div class="cd"><h2>2D Prediction Surface</h2>
+    <div class="stabs"><div class="stab act" onclick="surfTab(0)">λ × Temp</div><div class="stab" onclick="surfTab(1)">λ × pH</div><div class="stab" onclick="surfTab(2)">Temp × pH</div></div>
+    <div class="stc act" id="sf0"><div class="ch"><canvas id="c4s0"></canvas></div></div>
+    <div class="stc" id="sf1"><div class="ch"><canvas id="c4s1"></canvas></div></div>
+    <div class="stc" id="sf2"><div class="ch"><canvas id="c4s2"></canvas></div></div>
+  </div>
+  <div class="cd"><h2>Anomaly Detection (IQR)</h2><div class="ch"><canvas id="c4d"></canvas></div><div id="anomRes" style="margin-top:.8rem"></div></div>
 </div>
 
-<div class="cd"><h2>2D 예측면 (Surface)</h2>
-<div class="tabs">
-<div class="tab act" onclick="surfTab(0)">파장 × 온도</div>
-<div class="tab" onclick="surfTab(1)">파장 × pH</div>
-<div class="tab" onclick="surfTab(2)">온도 × pH</div>
-</div>
-<div class="tc act" id="surf0"><div class="ch"><canvas id="c4s0"></canvas></div></div>
-<div class="tc" id="surf1"><div class="ch"><canvas id="c4s1"></canvas></div></div>
-<div class="tc" id="surf2"><div class="ch"><canvas id="c4s2"></canvas></div></div>
-</div>
-
-<div class="cd"><h2>Anomaly Detection (IQR)</h2>
-<div class="ch"><canvas id="c4anom"></canvas></div>
-<div class="ab wn" id="p4anomResult"></div>
-</div>
-</div>
-
-<!-- ===== PAGE 5: Report ===== -->
+<!-- === P5 === -->
 <div class="page" id="p5">
-<div class="cd"><h2>종합 분석 보고서</h2><div id="report"></div>
-<div class="btns"><button class="btn btn-p" onclick="exportAll()">전체 CSV 내보내기</button><button class="btn btn-s" onclick="window.print()">인쇄</button></div>
-</div>
-</div>
-
+  <div class="cd"><h2>Analysis Report</h2><div id="report"></div>
+  <div class="btns" style="margin-top:1rem"><button class="btn btn-p" onclick="exportAll()">CSV Export</button><button class="btn btn-g" onclick="window.print()">Print</button></div></div>
 </div>
 
-<div class="footer">MB Spectral Analyzer &copy; 2026 | 전남과학고등학교 · AI4SE × Spectroscopy</div>
+</div>
+<div class="footer">MB Spectral Analyzer · 전남과학고등학교 생명 심화탐구 · AI4SE × Spectroscopy</div>
 
 <script>
-// ==================== GLOBALS ====================
-const MW=319.85,STOCK=1.0,EPS_DEFAULT=76000,PL_DEFAULT=0.3;
+// ========== HERO PARTICLES ==========
+(function(){
+const c=document.getElementById('heroCanvas'),x=c.getContext('2d');
+let W,H,pts=[];
+function resize(){W=c.width=c.parentElement.offsetWidth;H=c.height=c.parentElement.offsetHeight;
+pts=[];for(let i=0;i<50;i++)pts.push({x:Math.random()*W,y:Math.random()*H,r:Math.random()*2+.5,dx:(Math.random()-.5)*.4,dy:(Math.random()-.5)*.4,a:Math.random()*.3+.1})}
+function draw(){x.clearRect(0,0,W,H);
+pts.forEach(p=>{p.x+=p.dx;p.y+=p.dy;if(p.x<0||p.x>W)p.dx*=-1;if(p.y<0||p.y>H)p.dy*=-1;
+x.beginPath();x.arc(p.x,p.y,p.r,0,Math.PI*2);x.fillStyle=`rgba(96,165,250,${p.a})`;x.fill()});
+pts.forEach((a,i)=>{pts.slice(i+1).forEach(b=>{const d=Math.hypot(a.x-b.x,a.y-b.y);if(d<120){x.beginPath();x.moveTo(a.x,a.y);x.lineTo(b.x,b.y);x.strokeStyle=`rgba(96,165,250,${.08*(1-d/120)})`;x.stroke()}})});
+requestAnimationFrame(draw)}
+resize();draw();window.addEventListener('resize',resize)})();
+
+// ========== GLOBALS ==========
+const MW=319.85,EPS0=76000,PL0=.3;
 const WLS=[550,600,630,664,700],TEMPS=[4,25,40,60],PHS=[3,5,7,9,11];
-const P0_CONCS_MG=[1,.5,.25,.125,.0625,.03125,.015625,.0078125,.00390625,.001953125,.0009765625,0];
-const P0_FACTORS=[1,2,4,8,16,32,64,128,256,512,1024,Infinity];
-const P0_LABELS=['원액','1차','2차','3차','4차','5차','6차','7차','8차','9차','10차','대조군'];
-const WELLS=['A1','A2','A3','A4','A5','A6','A7','A8','A9','A10','A11','A12'];
-const P1_CONCS=[0,2,5,10,20,50];
-const EPS_WL={550:18000,600:42000,630:58000,664:76000,700:12000};
-const COLORS=['#1a73e8','#0f9d58','#f9a825','#d32f2f','#9c27b0','#00bcd4','#ff5722'];
+const P0M=[1,.5,.25,.125,.0625,.03125,.015625,.0078125,.00390625,.001953125,.0009765625,0];
+const P0F=[1,2,4,8,16,32,64,128,256,512,1024,Infinity];
+const P0L=['원액','1차','2차','3차','4차','5차','6차','7차','8차','9차','10차','Blank'];
+const WN=['A1','A2','A3','A4','A5','A6','A7','A8','A9','A10','A11','A12'];
+const P1C=[0,2,5,10,20,50];
+const EW={550:18000,600:42000,630:58000,664:76000,700:12000};
+const CL=['#3b82f6','#10b981','#f59e0b','#ef4444','#8b5cf6','#06b6d4','#f97316'];
+const CLa=CL.map(c=>c+'33');
 
-let charts={},D0=[],D1={},D2={},D3={},selWL=[630,664,700],allData=[];
+let ch={},D0=[],D1={},D2={},D3={},sWL=[630,664,700],aD=[];
 
-// ==================== FILE HANDLING ====================
-const dropZone=document.getElementById('dropZone');
-const fileInput=document.getElementById('fileInput');
+// ========== Chart defaults ==========
+Chart.defaults.color='#94a3c4';Chart.defaults.borderColor='rgba(30,45,71,.5)';
+Chart.defaults.font.family="'Inter',sans-serif";Chart.defaults.font.size=11;
+Chart.defaults.plugins.legend.labels.boxWidth=10;Chart.defaults.plugins.legend.labels.padding=12;
+Chart.defaults.elements.point.hoverRadius=7;
 
-dropZone.addEventListener('dragover',e=>{e.preventDefault();dropZone.classList.add('drag')});
-dropZone.addEventListener('dragleave',()=>dropZone.classList.remove('drag'));
-dropZone.addEventListener('drop',e=>{e.preventDefault();dropZone.classList.remove('drag');handleFiles(e.dataTransfer.files)});
-fileInput.addEventListener('change',e=>handleFiles(e.target.files));
-
-function handleFiles(files){
-  const readers=[];
-  for(const f of files){
-    readers.push(new Promise(res=>{
-      const r=new FileReader();
-      r.onload=e=>res({name:f.name,text:e.target.result});
-      r.readAsText(f);
-    }));
-  }
-  Promise.all(readers).then(results=>{
-    let detected=[];
-    results.forEach(({name,text})=>{
-      const type=detectAndParse(name,text);
-      detected.push(type);
-    });
-    setStatus('ok',`${results.length}개 파일 로드 완료: ${detected.join(', ')} — 자동 분석 실행 중...`);
-    runFullAnalysis();
-  });
-}
-
-function detectAndParse(name,text){
-  const lines=text.trim().split('\n').map(l=>l.split(',').map(s=>s.trim()));
-  const header=lines[0].map(h=>h.toLowerCase().replace(/['"]/g,''));
-
-  // Unified format: wavelength,temperature,pH,concentration_uM,absorbance
-  if(header.includes('wavelength')&&header.includes('absorbance')){
-    lines.slice(1).forEach(r=>{
-      if(r.length>=5){
-        const wl=+r[0],temp=+r[1],ph=+r[2],conc=+r[3],abs=+r[4];
-        if(!isNaN(abs))allData.push({wl,temp,ph,conc,abs});
-      }
-    });
-    unifiedToPhases();
-    return '통합 데이터';
-  }
-
-  // Basic: well,absorbance
-  if(header.includes('well')&&header.includes('absorbance')){
-    D0=Array(12).fill(null);
-    lines.slice(1).forEach(r=>{
-      const wi=WELLS.indexOf(r[0]?.toUpperCase());
-      if(wi>=0&&!isNaN(+r[1]))D0[wi]=+r[1];
-    });
-    return '기본 측정';
-  }
-
-  // Phase 1: concentration_uM,550nm,600nm,...
-  if(header.includes('concentration_um')||header[0]?.includes('concentration')){
-    D1={};
-    lines.slice(1).forEach(r=>{
-      const conc=+r[0],ci=P1_CONCS.indexOf(conc);
-      if(ci<0)return;
-      for(let wi=0;wi<5;wi++){
-        const v=+r[wi+1];if(!isNaN(v))D1[`${wi}_${ci}`]=v;
-      }
-    });
-    return 'Phase 1 (파장)';
-  }
-
-  // Phase 2: temperature_C,λ1,λ2,λ3
-  if(header[0]?.includes('temperature')||header[0]?.includes('temp')){
-    D2={};
-    const wlHeaders=header.slice(1).map(h=>parseInt(h));
-    if(wlHeaders.some(w=>!isNaN(w)))selWL=wlHeaders.filter(w=>!isNaN(w)).slice(0,3);
-    lines.slice(1).forEach(r=>{
-      const t=+r[0];
-      if(isNaN(t))return;
-      for(let wi=0;wi<Math.min(r.length-1,3);wi++){
-        const v=+r[wi+1];if(!isNaN(v))D2[`${t}_${wi}`]=v;
-      }
-    });
-    return 'Phase 2 (온도)';
-  }
-
-  // Phase 3: pH,λ1,λ2,λ3
-  if(header[0]==='ph'||header[0]?.includes('ph')){
-    D3={};
-    const wlHeaders=header.slice(1).map(h=>parseInt(h));
-    if(wlHeaders.some(w=>!isNaN(w)))selWL=wlHeaders.filter(w=>!isNaN(w)).slice(0,3);
-    lines.slice(1).forEach(r=>{
-      const ph=+r[0];
-      if(isNaN(ph))return;
-      for(let wi=0;wi<Math.min(r.length-1,3);wi++){
-        const v=+r[wi+1];if(!isNaN(v))D3[`${ph}_${wi}`]=v;
-      }
-    });
-    return 'Phase 3 (pH)';
-  }
-
-  // Fallback: try to guess from shape
-  // 12 rows → basic; rows with 6 cols matching wavelengths → phase1
-  if(lines.length>=12&&lines[1]?.length===2){
-    D0=Array(12).fill(null);
-    lines.slice(header.some(isNaN)?1:0).forEach((r,i)=>{
-      if(i<12&&!isNaN(+r[r.length-1]))D0[i]=+r[r.length-1];
-    });
-    return '기본 측정 (자동감지)';
-  }
-
-  setStatus('wn','파일 형식을 인식할 수 없습니다. 템플릿을 참고하세요.');
-  return '미인식';
-}
-
-function unifiedToPhases(){
-  // Split unified data into phase-specific stores
-  D1={};D2={};D3={};
-  allData.forEach(d=>{
-    // Phase 1: temp=25, pH=7, varying wl and conc
-    if(d.temp===25&&d.ph===7){
-      const wi=WLS.indexOf(d.wl),ci=P1_CONCS.indexOf(d.conc);
-      if(wi>=0&&ci>=0)D1[`${wi}_${ci}`]=d.abs;
-    }
-    // Phase 2: pH=7, conc=10, varying temp and wl
-    if(d.ph===7&&d.conc===10){
-      const swi=selWL.indexOf(d.wl);
-      if(swi>=0)D2[`${d.temp}_${swi}`]=d.abs;
-    }
-    // Phase 3: temp=25, conc=10, varying pH and wl
-    if(d.temp===25&&d.conc===10){
-      const swi=selWL.indexOf(d.wl);
-      if(swi>=0)D3[`${d.ph}_${swi}`]=d.abs;
-    }
-  });
-}
-
-// ==================== TEMPLATES ====================
-function downloadTemplate(type){
-  let csv='';
-  switch(type){
-    case'basic':csv='well,absorbance\n'+WELLS.map(w=>w+',').join('\n');break;
-    case'phase1':csv='concentration_uM,550nm,600nm,630nm,664nm,700nm\n'+P1_CONCS.map(c=>c+',,,,, ').join('\n');break;
-    case'phase2':csv=`temperature_C,${selWL[0]}nm,${selWL[1]}nm,${selWL[2]}nm\n`+TEMPS.map(t=>t+',,,').join('\n');break;
-    case'phase3':csv=`pH,${selWL[0]}nm,${selWL[1]}nm,${selWL[2]}nm\n`+PHS.map(p=>p+',,,').join('\n');break;
-    case'unified':csv='wavelength,temperature,pH,concentration_uM,absorbance\n664,25,7,10,';break;
-  }
-  dl(`template_${type}.csv`,csv);
-}
+// ========== UTILS ==========
+const $=id=>document.getElementById(id);
+function dc(id){if(ch[id]){ch[id].destroy();delete ch[id]}}
+function c2m(mg){return(mg/1e3)/(MW/1e3)}
+function lr(xs,ys){const n=xs.length;let sx=0,sy=0,sxy=0,sx2=0;for(let i=0;i<n;i++){sx+=xs[i];sy+=ys[i];sxy+=xs[i]*ys[i];sx2+=xs[i]*xs[i]}const mx=sx/n,my=sy/n,sl=(sxy-n*mx*my)/(sx2-n*mx*mx||1e-30),ic=my-sl*mx;let ssr=0,sst=0;for(let i=0;i<n;i++){ssr+=(ys[i]-(sl*xs[i]+ic))**2;sst+=(ys[i]-my)**2}return{s:sl,i:ic,r2:sst?1-ssr/sst:0}}
+function mn(a){return a.length?a.reduce((s,v)=>s+v,0)/a.length:0}
+function iqr(a){const s=[...a].sort((x,y)=>x-y);return{q1:s[Math.floor(s.length*.25)],q3:s[Math.floor(s.length*.75)]}}
+function anova1(gs){const all=[],gm=[];let N=0;gs.forEach(g=>{gm.push(mn(g));all.push(...g);N+=g.length});const GM=mn(all),k=gs.length;let B=0,W=0;gs.forEach((g,i)=>{B+=g.length*(gm[i]-GM)**2;g.forEach(v=>{W+=(v-gm[i])**2})});const dB=k-1,dW=N-k,F=(B/dB)/((W/dW)||1e-30),p=fP(F,dB,dW);return{F,dB,dW,p,sig:p<.05}}
+function anova2(data,rows,cols){const all=[],rg={},cg={};rows.forEach(r=>rg[r]=[]);cols.forEach(c=>cg[c]=[]);rows.forEach(r=>{cols.forEach((c,ci)=>{const v=data[r]?.[ci];if(v!=null){all.push(v);rg[r].push(v);cg[c].push(v)}})});if(all.length<4)return{Fr:0,Fc:0,pR:1,pC:1};const GM=mn(all),N=all.length,a=rows.length,b=cols.length;let SR=0,SC=0,ST=0;all.forEach(v=>ST+=(v-GM)**2);rows.forEach(r=>{if(rg[r].length)SR+=rg[r].length*(mn(rg[r])-GM)**2});cols.forEach(c=>{if(cg[c].length)SC+=cg[c].length*(mn(cg[c])-GM)**2});const SE=Math.max(ST-SR-SC,1e-10),dR=a-1,dC=b-1,dE=Math.max(N-a-b+1,1);return{Fr:(SR/dR)/((SE/dE)||1e-30),Fc:(SC/dC)/((SE/dE)||1e-30),pR:fP((SR/dR)/((SE/dE)||1e-30),dR,dE),pC:fP((SC/dC)/((SE/dE)||1e-30),dC,dE)}}
+function fP(F,d1,d2){if(F<=0||d1<=0||d2<=0)return 1;return bI(d2/2,d1/2,d2/(d2+d1*F))}
+function bI(a,b,x){if(x<=0)return 1;if(x>=1)return 0;const t=Math.exp(lG(a+b)-lG(a)-lG(b)+a*Math.log(x)+b*Math.log(1-x));return x<(a+1)/(a+b+2)?1-t*bCF(a,b,x)/a:t*bCF(b,a,1-x)/b}
+function bCF(a,b,x){let q=a+b,p=a+1,m=a-1,c=1,d=1-q*x/p;if(Math.abs(d)<1e-30)d=1e-30;d=1/d;let h=d;for(let i=1;i<=100;i++){let i2=2*i,aa=i*(b-i)*x/((m+i2)*(a+i2));d=1+aa*d;if(Math.abs(d)<1e-30)d=1e-30;c=1+aa/c;if(Math.abs(c)<1e-30)c=1e-30;d=1/d;h*=d*c;aa=-(a+i)*(q+i)*x/((a+i2)*(p+i2));d=1+aa*d;if(Math.abs(d)<1e-30)d=1e-30;c=1+aa/c;if(Math.abs(c)<1e-30)c=1e-30;d=1/d;let dl=d*c;h*=dl;if(Math.abs(dl-1)<3e-7)break}return h}
+function lG(x){const c=[76.18009172947146,-86.50532032941677,24.01409824083091,-1.231739572450155,.001208650973866179,-5.395239384953e-6];let y=x,t=x+5.5;t-=(x+.5)*Math.log(t);let s=1.000000000190015;for(let j=0;j<6;j++)s+=c[j]/++y;return-t+Math.log(2.5066282746310005*s/x)}
 
 function dl(fn,t){const b=new Blob(['\ufeff'+t],{type:'text/csv;charset=utf-8;'});const a=document.createElement('a');a.href=URL.createObjectURL(b);a.download=fn;a.click()}
-function el(id){return document.getElementById(id)}
-function destroyChart(id){if(charts[id]){charts[id].destroy();delete charts[id]}}
-function setStatus(type,msg){el('statusBar').className=`status-bar ${type}`;el('statusBar').innerHTML=msg}
+function ss(t,m){$('statusBar').className=`status ${t}`;$('statusBar').innerHTML=`<div class="dot"></div>${m}`}
 
-// ==================== DEMO DATA ====================
+// ========== GRADIENT HELPERS ==========
+function mkGrad(ctx,c1,c2,h){const g=ctx.createLinearGradient(0,0,0,h);g.addColorStop(0,c1);g.addColorStop(1,c2);return g}
+
+// ========== FILES ==========
+const dz=$('dropZone'),fi=$('fileInput');
+dz.addEventListener('dragover',e=>{e.preventDefault();dz.classList.add('drag')});
+dz.addEventListener('dragleave',()=>dz.classList.remove('drag'));
+dz.addEventListener('drop',e=>{e.preventDefault();dz.classList.remove('drag');handleF(e.dataTransfer.files)});
+fi.addEventListener('change',e=>handleF(e.target.files));
+
+function handleF(files){Promise.all([...files].map(f=>new Promise(r=>{const rd=new FileReader();rd.onload=e=>r({n:f.name,t:e.target.result});rd.readAsText(f)}))).then(res=>{let det=[];res.forEach(({n,t})=>det.push(parse(n,t)));ss('ok',`${res.length}개 파일 감지: ${det.join(' · ')} — 자동 분석 중...`);run()})}
+
+function parse(n,t){
+  const L=t.trim().split('\n').map(l=>l.split(',').map(s=>s.trim())),H=L[0].map(h=>h.toLowerCase().replace(/['"]/g,''));
+  if(H.includes('wavelength')&&H.includes('absorbance')){L.slice(1).forEach(r=>{if(r.length>=5){const v=+r[4];if(!isNaN(v))aD.push({wl:+r[0],temp:+r[1],ph:+r[2],conc:+r[3],abs:v})}});u2p();return'통합'}
+  if(H.includes('well')){D0=Array(12).fill(null);L.slice(1).forEach(r=>{const i=WN.indexOf(r[0]?.toUpperCase());if(i>=0&&!isNaN(+r[1]))D0[i]=+r[1]});return'기본측정'}
+  if(H[0]?.includes('concentration')){D1={};L.slice(1).forEach(r=>{const c=+r[0],ci=P1C.indexOf(c);if(ci<0)return;for(let w=0;w<5;w++){const v=+r[w+1];if(!isNaN(v))D1[`${w}_${ci}`]=v}});return'Phase1'}
+  if(H[0]?.includes('temp')){D2={};const wh=H.slice(1).map(h=>parseInt(h));if(wh.some(w=>!isNaN(w)))sWL=wh.filter(w=>!isNaN(w)).slice(0,3);L.slice(1).forEach(r=>{const t=+r[0];if(!isNaN(t))for(let w=0;w<3;w++){const v=+r[w+1];if(!isNaN(v))D2[`${t}_${w}`]=v}});return'Phase2'}
+  if(H[0]==='ph'||H[0]?.includes('ph')){D3={};const wh=H.slice(1).map(h=>parseInt(h));if(wh.some(w=>!isNaN(w)))sWL=wh.filter(w=>!isNaN(w)).slice(0,3);L.slice(1).forEach(r=>{const p=+r[0];if(!isNaN(p))for(let w=0;w<3;w++){const v=+r[w+1];if(!isNaN(v))D3[`${p}_${w}`]=v}});return'Phase3'}
+  if(L.length>=12&&L[1]?.length<=3){D0=Array(12).fill(null);L.slice(H.some(isNaN)?0:1).forEach((r,i)=>{if(i<12&&!isNaN(+r[r.length-1]))D0[i]=+r[r.length-1]});return'기본(추정)'}
+  return'?'
+}
+function u2p(){D1={};D2={};D3={};aD.forEach(d=>{if(d.temp===25&&d.ph===7){const wi=WLS.indexOf(d.wl),ci=P1C.indexOf(d.conc);if(wi>=0&&ci>=0)D1[`${wi}_${ci}`]=d.abs}if(d.ph===7&&d.conc===10){const si=sWL.indexOf(d.wl);if(si>=0)D2[`${d.temp}_${si}`]=d.abs}if(d.temp===25&&d.conc===10){const si=sWL.indexOf(d.wl);if(si>=0)D3[`${d.ph}_${si}`]=d.abs}})}
+
+function downloadTemplate(t){let c='';switch(t){case'basic':c='well,absorbance\n'+WN.map(w=>w+',').join('\n');break;case'phase1':c='concentration_uM,550nm,600nm,630nm,664nm,700nm\n'+P1C.map(c=>c+',,,,,').join('\n');break;case'phase2':c=`temperature_C,${sWL[0]}nm,${sWL[1]}nm,${sWL[2]}nm\n`+TEMPS.map(t=>t+',,,').join('\n');break;case'phase3':c=`pH,${sWL[0]}nm,${sWL[1]}nm,${sWL[2]}nm\n`+PHS.map(p=>p+',,,').join('\n');break;case'unified':c='wavelength,temperature,pH,concentration_uM,absorbance\n664,25,7,10,';break}dl(`template_${t}.csv`,c)}
+
+// ========== DEMO ==========
 function loadDemo(){
-  const l=PL_DEFAULT;
-  // P0
   D0=[2.850,1.420,.715,.362,.178,.092,.048,.026,.015,.009,.006,.003];
-  // P1
-  WLS.forEach((wl,wi)=>{const eps=EPS_WL[wl];P1_CONCS.forEach((conc,ci)=>{
-    const n=1+(Math.random()-.5)*.08;D1[`${wi}_${ci}`]=conc===0?(.001+Math.random()*.002):parseFloat((eps*l*conc*1e-6*n).toFixed(4));
-  })});
-  // Determine selWL from P1
-  const regs={};WLS.forEach((wl,wi)=>{const xs=[],ys=[];P1_CONCS.forEach((c,ci)=>{const v=D1[`${wi}_${ci}`];if(v!=null&&c>0){xs.push(c);ys.push(v)}});if(xs.length>=2)regs[wl]=linReg(xs,ys)});
-  const ranked=Object.entries(regs).sort((a,b)=>(b[1].r2*b[1].slope)-(a[1].r2*a[1].slope));
-  if(ranked.length>=3)selWL=ranked.slice(0,3).map(r=>parseInt(r[0]));
-  // P2
-  TEMPS.forEach(t=>{selWL.forEach((wl,wi)=>{const eps=EPS_WL[wl]||76000;const base=eps*l*10e-6;
-    const tf=t===4?.95:t===25?1:t===40?1.03:1.08;D2[`${t}_${wi}`]=parseFloat((base*tf*(1+(Math.random()-.5)*.06)).toFixed(4))})});
-  // P3
-  PHS.forEach(ph=>{selWL.forEach((wl,wi)=>{const eps=EPS_WL[wl]||76000;const base=eps*l*10e-6;
-    const pf=ph===3?.15:ph===5?.55:ph===7?1:ph===9?.92:.85;D3[`${ph}_${wi}`]=parseFloat((base*pf*(1+(Math.random()-.5)*.06)).toFixed(4))})});
-
-  setStatus('ok','데모 데이터 로드 완료 — 전체 자동 분석 실행 중...');
-  runFullAnalysis();
+  WLS.forEach((wl,wi)=>{const eps=EW[wl];P1C.forEach((c,ci)=>{const n=1+(Math.random()-.5)*.08;D1[`${wi}_${ci}`]=c===0?(.001+Math.random()*.002):parseFloat((eps*PL0*c*1e-6*n).toFixed(4))})});
+  const rg={};WLS.forEach((wl,wi)=>{const xs=[],ys=[];P1C.forEach((c,ci)=>{const v=D1[`${wi}_${ci}`];if(v!=null&&c>0){xs.push(c);ys.push(v)}});if(xs.length>=2)rg[wl]=lr(xs,ys)});
+  const rk=Object.entries(rg).sort((a,b)=>(b[1].r2*b[1].s)-(a[1].r2*a[1].s));
+  if(rk.length>=3)sWL=rk.slice(0,3).map(r=>parseInt(r[0]));
+  TEMPS.forEach(t=>{sWL.forEach((wl,wi)=>{const e=EW[wl]||76000,base=e*PL0*10e-6,tf=t===4?.95:t===25?1:t===40?1.03:1.08;D2[`${t}_${wi}`]=parseFloat((base*tf*(1+(Math.random()-.5)*.06)).toFixed(4))})});
+  PHS.forEach(ph=>{sWL.forEach((wl,wi)=>{const e=EW[wl]||76000,base=e*PL0*10e-6,pf=ph===3?.15:ph===5?.55:ph===7?1:ph===9?.92:.85;D3[`${ph}_${wi}`]=parseFloat((base*pf*(1+(Math.random()-.5)*.06)).toFixed(4))})});
+  ss('ok','데모 데이터 로드 완료 — 전체 분석 실행 중...');run()
 }
 
-// ==================== MATH UTILS ====================
-function concMgToMol(mg){return(mg/1000)/(MW/1000)}
-function linReg(xs,ys){
-  const n=xs.length;let sx=0,sy=0,sxy=0,sx2=0;
-  for(let i=0;i<n;i++){sx+=xs[i];sy+=ys[i];sxy+=xs[i]*ys[i];sx2+=xs[i]*xs[i]}
-  const mx=sx/n,my=sy/n,sl=(sxy-n*mx*my)/(sx2-n*mx*mx||1e-30),ic=my-sl*mx;
-  let ssr=0,sst=0;for(let i=0;i<n;i++){ssr+=(ys[i]-(sl*xs[i]+ic))**2;sst+=(ys[i]-my)**2}
-  return{slope:sl,intercept:ic,r2:sst?1-ssr/sst:0}
-}
-function mean(a){return a.length?a.reduce((s,v)=>s+v,0)/a.length:0}
-function stdev(a){const m=mean(a);return Math.sqrt(a.reduce((s,v)=>s+(v-m)**2,0)/a.length)}
-function iqr(a){const s=[...a].sort((x,y)=>x-y),q1=s[Math.floor(s.length*.25)],q3=s[Math.floor(s.length*.75)];return{q1,q3,iqr:q3-q1}}
+// ========== NAV ==========
+function go(n){document.querySelectorAll('.nav-btn').forEach((b,i)=>b.classList.toggle('act',i===n));document.querySelectorAll('.page').forEach(p=>p.classList.remove('act'));$('p'+n).classList.add('act');if(n===5)report()}
 
-function anova1(groups){
-  const all=[],gm=[];let N=0;
-  groups.forEach(g=>{gm.push(mean(g));all.push(...g);N+=g.length});
-  const GM=mean(all),k=groups.length;let SSB=0,SSW=0;
-  groups.forEach((g,i)=>{SSB+=g.length*(gm[i]-GM)**2;g.forEach(v=>{SSW+=(v-gm[i])**2})});
-  const dfB=k-1,dfW=N-k,F=(SSB/dfB)/((SSW/dfW)||1e-30),p=fDistP(F,dfB,dfW);
-  return{F,dfB,dfW,SSB,SSW,p,sig:p<.05}
-}
-function anova2(data,rows,cols){
-  const all=[],rg={},cg={};rows.forEach(r=>rg[r]=[]);cols.forEach(c=>cg[c]=[]);
-  rows.forEach(r=>{cols.forEach((c,ci)=>{const v=data[r]?.[ci];if(v!=null){all.push(v);rg[r].push(v);cg[c].push(v)}})});
-  if(all.length<4)return{Fr:0,Fc:0,pR:1,pC:1};
-  const GM=mean(all),N=all.length,a=rows.length,b=cols.length;let SSR=0,SSC=0,SST=0;
-  all.forEach(v=>SST+=(v-GM)**2);
-  rows.forEach(r=>{if(rg[r].length)SSR+=rg[r].length*(mean(rg[r])-GM)**2});
-  cols.forEach(c=>{if(cg[c].length)SSC+=cg[c].length*(mean(cg[c])-GM)**2});
-  const SSE=Math.max(SST-SSR-SSC,1e-10),dfR=a-1,dfC=b-1,dfE=Math.max(N-a-b+1,1);
-  const Fr=(SSR/dfR)/((SSE/dfE)||1e-30),Fc=(SSC/dfC)/((SSE/dfE)||1e-30);
-  return{Fr,Fc,pR:fDistP(Fr,dfR,dfE),pC:fDistP(Fc,dfC,dfE),dfR,dfC,dfE}
-}
-function fDistP(F,d1,d2){if(F<=0||d1<=0||d2<=0)return 1;return betaInc(d2/2,d1/2,d2/(d2+d1*F))}
-function betaInc(a,b,x){if(x<=0)return 1;if(x>=1)return 0;const bt=Math.exp(lnG(a+b)-lnG(a)-lnG(b)+a*Math.log(x)+b*Math.log(1-x));return x<(a+1)/(a+b+2)?1-bt*betaCF(a,b,x)/a:bt*betaCF(b,a,1-x)/b}
-function betaCF(a,b,x){let qab=a+b,qap=a+1,qam=a-1,c=1,d=1-qab*x/qap;if(Math.abs(d)<1e-30)d=1e-30;d=1/d;let h=d;for(let m=1;m<=100;m++){let m2=2*m,aa=m*(b-m)*x/((qam+m2)*(a+m2));d=1+aa*d;if(Math.abs(d)<1e-30)d=1e-30;c=1+aa/c;if(Math.abs(c)<1e-30)c=1e-30;d=1/d;h*=d*c;aa=-(a+m)*(qab+m)*x/((a+m2)*(qap+m2));d=1+aa*d;if(Math.abs(d)<1e-30)d=1e-30;c=1+aa/c;if(Math.abs(c)<1e-30)c=1e-30;d=1/d;let del=d*c;h*=del;if(Math.abs(del-1)<3e-7)break}return h}
-function lnG(x){const c=[76.18009172947146,-86.50532032941677,24.01409824083091,-1.231739572450155,.001208650973866179,-5.395239384953e-6];let y=x,t=x+5.5;t-=(x+.5)*Math.log(t);let s=1.000000000190015;for(let j=0;j<6;j++)s+=c[j]/++y;return-t+Math.log(2.5066282746310005*s/x)}
-
-// ==================== NAVIGATION ====================
-function go(n){document.querySelectorAll('.nav-btn').forEach((b,i)=>b.classList.toggle('act',i===n));document.querySelectorAll('.page').forEach((p,i)=>p.classList.toggle('act',i===n));if(n===5)genReport()}
-
-// ==================== FULL AUTO ANALYSIS ====================
-function runFullAnalysis(){
-  el('nav').style.display='flex';
-  const hasP0=D0.some(v=>v!==null),hasP1=Object.values(D1).some(v=>v!==null);
-  const hasP2=Object.values(D2).some(v=>v!==null),hasP3=Object.values(D3).some(v=>v!==null);
-
-  if(hasP0)analyzeP0();
-  if(hasP1)analyzeP1();
-  if(hasP2)analyzeP2();
-  if(hasP3)analyzeP3();
-  if(hasP1||hasP2||hasP3)runAI();
-
-  // Navigate to first available page
-  if(hasP0)go(0);else if(hasP1)go(1);else if(hasP2)go(2);else if(hasP3)go(3);
-
-  setStatus('ok','분석 완료! 상단 탭에서 각 Phase 결과를 확인하세요.');
+// ========== RUN ==========
+function run(){
+  $('nav').classList.add('show');
+  const h0=D0.some(v=>v!==null),h1=Object.values(D1).some(v=>v!==null),h2=Object.values(D2).some(v=>v!==null),h3=Object.values(D3).some(v=>v!==null);
+  [h0,h1,h2,h3,h1||h2||h3,true].forEach((h,i)=>{const b=$('b'+i);if(b)b.style.display=h?'':'none'});
+  if(h0)doP0();if(h1)doP1();if(h2)doP2();if(h3)doP3();if(h1||h2||h3)doAI();
+  if(h0)go(0);else if(h1)go(1);else if(h2)go(2);else if(h3)go(3);
+  ss('ok','분석 완료! 탭에서 각 Phase 결과를 확인하세요.')
 }
 
-// ==================== P0: Basic ====================
-function analyzeP0(){
-  const plate=el('plateVis');plate.innerHTML='';
-  for(let i=0;i<12;i++){
-    const w=document.createElement('div');w.className='well';
-    w.style.cssText=`width:48px;height:48px;border-radius:50%;border:2px solid #ccc;display:flex;flex-direction:column;align-items:center;justify-content:center;font-size:.58rem;font-weight:600;flex-shrink:0;transition:all .2s;cursor:pointer`;
-    const t=i<11?Math.max(0,1-i*.09):0;
-    w.style.background=i<11?`rgba(0,${50+t*30},${150+t*105},${.15+t*.85})`:'#f0f0f0';
-    const ct=i<11?(P0_CONCS_MG[i]>=.01?P0_CONCS_MG[i].toFixed(3):P0_CONCS_MG[i].toExponential(1)):'blank';
-    w.innerHTML=`<span style="color:${t>.3?'#fff':'#333'}">${WELLS[i]}</span><span style="font-size:.5rem;color:${t>.3?'rgba(255,255,255,.8)':'#888'}">${ct}</span>`;
-    plate.appendChild(w);
-  }
+// ========== P0 ==========
+function doP0(){
+  const pl=$('plateVis');pl.innerHTML='';
+  for(let i=0;i<12;i++){const w=document.createElement('div');w.className='well';const t=i<11?1-i/11:0;
+    const bg=i<11?`radial-gradient(circle at 35% 35%, rgba(${Math.round(100-t*80)},${Math.round(160-t*40)},${Math.round(255)},${.2+t*.75}), rgba(0,${Math.round(40+t*30)},${Math.round(120+t*80)},${.3+t*.65}))`:'radial-gradient(circle at 35% 35%, rgba(40,50,70,.4), rgba(20,30,50,.6))';
+    w.style.background=bg;const ct=i<11?(P0M[i]>=.01?P0M[i].toFixed(3):P0M[i].toExponential(1)):'∅';
+    w.innerHTML=`<span style="color:${t>.25?'#fff':'var(--t2)'}">${WN[i]}</span><span class="wc" style="color:${t>.25?'rgba(255,255,255,.7)':'var(--t3)'}">${ct}</span>`;
+    w.title=`${WN[i]}: ${P0L[i]} · ${ct} mg/mL`;pl.appendChild(w)}
 
-  const bl=D0[11]||0,eps=EPS_DEFAULT,l=PL_DEFAULT;
-  const cor=D0.map(v=>v!==null?Math.max(0,v-bl):null);
-  const tb=el('tb0');tb.innerHTML='';
-  const errs=[],pairs=[];
+  const bl=D0[11]||0,cor=D0.map(v=>v!=null?Math.max(0,v-bl):null);
+  const tb=$('tb0');tb.innerHTML='';const errs=[],pairs=[];
+  for(let i=0;i<12;i++){const cm=c2m(P0M[i]),um=cm*1e6,ta=i<11?EPS0*PL0*cm:0;
+    let eh='-',ch2='-';
+    if(cor[i]!=null){ch2=cor[i].toFixed(4);if(i<11&&ta>0){const e=((cor[i]-ta)/ta*100);errs.push({w:WN[i],e,a:Math.abs(e)});const bc=Math.abs(e)<10?'badge-ok':Math.abs(e)<25?'badge-wn':'badge-er';eh=`<span class="badge ${bc}">${e>0?'+':''}${e.toFixed(1)}%</span>`;pairs.push({x:cm,y:cor[i]})}else if(i===11)eh='blank'}
+    const tr=document.createElement('tr');if(i===11)tr.style.background='rgba(245,158,11,.03)';
+    tr.innerHTML=`<td>${WN[i]}</td><td style="color:var(--t3)">${P0L[i]}</td><td style="color:var(--t3)">${P0F[i]===Infinity?'∞':P0F[i]+'×'}</td><td>${i<11?(P0M[i]>=.001?P0M[i].toFixed(4):P0M[i].toExponential(2)):'0'}</td><td>${um.toFixed(1)}</td><td style="color:var(--ac2)">${ta.toFixed(4)}</td><td>${D0[i]?.toFixed(4)??'-'}</td><td>${ch2}</td><td>${eh}</td>`;
+    tb.appendChild(tr)}
 
-  for(let i=0;i<12;i++){
-    const cm=concMgToMol(P0_CONCS_MG[i]),um=cm*1e6,ta=i<11?eps*l*cm:0;
-    const tr=document.createElement('tr');if(i===11)tr.style.background='#fff3e0';
-    let errHtml='-',corHtml='-';
-    if(cor[i]!==null){
-      corHtml=cor[i].toFixed(4);
-      if(i<11&&ta>0){
-        const e=((cor[i]-ta)/ta*100);errs.push({w:WELLS[i],e,ae:Math.abs(e)});
-        const bc=Math.abs(e)<10?'bg-ok':Math.abs(e)<25?'bg-wn':'bg-er';
-        errHtml=`<span class="${bc}">${e>0?'+':''}${e.toFixed(1)}%</span>`;
-        pairs.push({x:cm,y:cor[i]});
-      } else if(i===11) errHtml='blank';
-    }
-    tr.innerHTML=`<td style="font-weight:600">${WELLS[i]}</td><td>${P0_LABELS[i]}</td><td>${P0_FACTORS[i]===Infinity?'∞':P0_FACTORS[i]+'×'}</td><td>${i<11?(P0_CONCS_MG[i]>=.001?P0_CONCS_MG[i].toFixed(4):P0_CONCS_MG[i].toExponential(2)):'0'}</td><td>${um.toFixed(1)}</td><td>${ta.toFixed(4)}</td><td>${D0[i]?.toFixed(4)??'-'}</td><td>${corHtml}</td><td>${errHtml}</td>`;
-    tb.appendChild(tr);
-  }
+  if(!pairs.length)return;const reg=lr(pairs.map(p=>p.x),pairs.map(p=>p.y));
+  const aE=mn(errs.map(e=>e.a)),mE=Math.max(...errs.map(e=>e.a)),eC=reg.s/PL0;
+  $('p0s').innerHTML=`<div class="stat ${reg.r2>.99?'good':reg.r2>.95?'warn':'bad'}"><div class="v">${reg.r2.toFixed(4)}</div><div class="l">R² (Linearity)</div></div><div class="stat"><div class="v">${eC.toFixed(0)}</div><div class="l">ε Experimental</div></div><div class="stat ${aE<10?'good':aE<25?'warn':'bad'}"><div class="v">${aE.toFixed(1)}%</div><div class="l">Avg Error</div></div><div class="stat"><div class="v">${mE.toFixed(1)}%</div><div class="l">Max Error</div></div>`;
 
-  if(!pairs.length)return;
-  const reg=linReg(pairs.map(p=>p.x),pairs.map(p=>p.y));
-  const avgE=mean(errs.map(e=>e.ae)),maxE=Math.max(...errs.map(e=>e.ae));
-  const epsCalc=reg.slope/l;
+  dc('c0a');dc('c0b');
+  const ctx0a=$('c0a').getContext('2d');
+  const tL=[],rL=[];for(let c=0;c<=pairs[0].x*1.05;c+=pairs[0].x/80){tL.push({x:c,y:EPS0*PL0*c});rL.push({x:c,y:reg.s*c+reg.i})}
+  ch.c0a=new Chart(ctx0a,{type:'scatter',data:{datasets:[
+    {label:'Measured',data:pairs,backgroundColor:'#3b82f6',borderColor:'#60a5fa',pointRadius:5,pointHoverRadius:8,pointBorderWidth:2},
+    {label:'Beer-Lambert Theory',data:tL,borderColor:'rgba(16,185,129,.5)',borderWidth:2,borderDash:[8,4],pointRadius:0,showLine:true,type:'line'},
+    {label:`Regression (R²=${reg.r2.toFixed(4)})`,data:rL,borderColor:'rgba(239,68,68,.5)',borderWidth:2,pointRadius:0,showLine:true,type:'line'}
+  ]},options:{responsive:true,maintainAspectRatio:false,scales:{x:{title:{display:true,text:'Concentration (mol/L)',color:'#94a3c4'},grid:{color:'rgba(30,45,71,.3)'}},y:{title:{display:true,text:'Absorbance',color:'#94a3c4'},beginAtZero:true,grid:{color:'rgba(30,45,71,.3)'}}},plugins:{legend:{position:'bottom'}}}});
 
-  el('p0sg').innerHTML=`
-    <div class="st ${reg.r2>.99?'good':reg.r2>.95?'warn':'bad'}"><div class="v">${reg.r2.toFixed(4)}</div><div class="l">R²</div></div>
-    <div class="st"><div class="v">${epsCalc.toFixed(0)}</div><div class="l">실험 ε (M⁻¹cm⁻¹)</div></div>
-    <div class="st ${avgE<10?'good':avgE<25?'warn':'bad'}"><div class="v">${avgE.toFixed(1)}%</div><div class="l">평균 오차</div></div>
-    <div class="st"><div class="v">${maxE.toFixed(1)}%</div><div class="l">최대 오차</div></div>`;
+  ch.c0b=new Chart($('c0b'),{type:'bar',data:{labels:errs.map(e=>e.w),datasets:[
+    {label:'Theory',data:errs.map(e=>{const cm=c2m(P0M[WN.indexOf(e.w)]);return EPS0*PL0*cm}),backgroundColor:'rgba(16,185,129,.3)',borderColor:'rgba(16,185,129,.6)',borderWidth:1,borderRadius:4},
+    {label:'Measured',data:pairs.map(p=>p.y),backgroundColor:'rgba(59,130,246,.3)',borderColor:'rgba(59,130,246,.6)',borderWidth:1,borderRadius:4}
+  ]},options:{responsive:true,maintainAspectRatio:false,scales:{y:{beginAtZero:true,grid:{color:'rgba(30,45,71,.3)'}},x:{grid:{display:false}}},plugins:{legend:{position:'bottom'}}}});
 
-  destroyChart('c0lin');destroyChart('c0bar');
-  const theoL=[],regL=[];
-  for(let c=0;c<=pairs[0].x*1.05;c+=pairs[0].x/80){theoL.push({x:c,y:eps*l*c});regL.push({x:c,y:reg.slope*c+reg.intercept})}
-  charts.c0lin=new Chart(el('c0lin'),{type:'scatter',data:{datasets:[
-    {label:'측정값',data:pairs,backgroundColor:'rgba(26,115,232,.8)',pointRadius:5},
-    {label:'이론선',data:theoL,borderColor:'rgba(15,157,88,.5)',borderWidth:2,borderDash:[6,3],pointRadius:0,showLine:true,type:'line'},
-    {label:`회귀 R²=${reg.r2.toFixed(4)}`,data:regL,borderColor:'rgba(211,47,47,.6)',borderWidth:2,pointRadius:0,showLine:true,type:'line'}
-  ]},options:{responsive:true,maintainAspectRatio:false,scales:{x:{title:{display:true,text:'농도 (mol/L)'}},y:{title:{display:true,text:'흡광도'},beginAtZero:true}},plugins:{legend:{position:'bottom',labels:{font:{size:10}}}}}});
-
-  charts.c0bar=new Chart(el('c0bar'),{type:'bar',data:{labels:errs.map(e=>e.w),datasets:[
-    {label:'이론',data:errs.map(e=>{const cm=concMgToMol(P0_CONCS_MG[WELLS.indexOf(e.w)]);return eps*l*cm}),backgroundColor:'rgba(15,157,88,.4)'},
-    {label:'측정(보정)',data:pairs.map(p=>p.y),backgroundColor:'rgba(26,115,232,.4)'}
-  ]},options:{responsive:true,maintainAspectRatio:false,scales:{y:{beginAtZero:true}},plugins:{legend:{position:'bottom',labels:{font:{size:10}}}}}});
-
-  // Auto analysis text
-  const epsErr=((epsCalc-EPS_DEFAULT)/EPS_DEFAULT*100);
-  el('p0analysis').innerHTML=`<h2>자동 분석 결과</h2>
-  <div class="ab ${reg.r2>.99?'ok':reg.r2>.95?'wn':'er'}"><h4>Beer-Lambert 선형성</h4>
-  <p>R² = ${reg.r2.toFixed(6)} → ${reg.r2>.99?'우수: 선형성이 매우 잘 성립':reg.r2>.95?'양호: 약간의 편차 존재':'미흡: 비선형 편차 크게 관찰'}</p>
-  <p>회귀식: A = ${reg.slope.toFixed(2)} × c ${reg.intercept>=0?'+ ':'- '}${Math.abs(reg.intercept).toFixed(4)}</p></div>
-  <div class="ab"><h4>몰 흡광 계수 비교</h4>
-  <ul><li>문헌값 ε: ${EPS_DEFAULT.toLocaleString()} M⁻¹cm⁻¹</li>
-  <li>실험값 ε: ${epsCalc.toFixed(0)} M⁻¹cm⁻¹ (편차: ${epsErr>0?'+':''}${epsErr.toFixed(1)}%)</li></ul></div>
-  <div class="ab wn"><h4>피펫팅 정확도</h4>
-  <p>평균 오차 ${avgE.toFixed(1)}% / 최대 오차 ${maxE.toFixed(1)}% (${errs.sort((a,b)=>b.ae-a.ae)[0]?.w})</p>
-  <p>오차 누적: 단계당 ±${avgE.toFixed(0)}%일 경우 10단계 후 이론 최대 누적 ±${(Math.pow(1+avgE/100,10)*100-100).toFixed(0)}%</p></div>`;
+  const eE=((eC-EPS0)/EPS0*100);
+  $('p0x').innerHTML=`<h2>Auto Analysis</h2>
+  <div class="abox ${reg.r2>.99?'ok':reg.r2>.95?'wn':'er'}"><h4>Beer-Lambert Linearity: R² = ${reg.r2.toFixed(6)}</h4><p>${reg.r2>.99?'Excellent linearity — pipetting accuracy is high':reg.r2>.95?'Good linearity with minor deviations':'Poor linearity — check pipetting technique'}</p><p>Regression: A = ${reg.s.toFixed(2)}c ${reg.i>=0?'+ ':'− '}${Math.abs(reg.i).toFixed(4)}</p></div>
+  <div class="abox info"><h4>Molar Absorptivity Comparison</h4><ul><li>Literature ε: ${EPS0.toLocaleString()} M⁻¹cm⁻¹</li><li>Experimental ε: ${eC.toFixed(0)} M⁻¹cm⁻¹ (${eE>0?'+':''}${eE.toFixed(1)}%)</li></ul></div>
+  <div class="abox wn"><h4>Pipetting Accuracy</h4><p>Mean error ${aE.toFixed(1)}% · Max ${mE.toFixed(1)}% at ${errs.sort((a,b)=>b.a-a.a)[0]?.w}</p><p>Error propagation: ±${aE.toFixed(0)}%/step → theoretical max ±${(Math.pow(1+aE/100,10)*100-100).toFixed(0)}% after 10 steps</p></div>`
 }
 
-// ==================== P1: Wavelength ====================
-function analyzeP1(){
-  const tb=el('tb1');tb.innerHTML='';const l=PL_DEFAULT;
-  P1_CONCS.forEach((conc,ci)=>{
-    const tr=document.createElement('tr');
-    let h=`<td style="font-weight:600">${conc}</td>`;
-    WLS.forEach((wl,wi)=>{const v=D1[`${wi}_${ci}`];h+=`<td>${v!=null?v.toFixed(4):'-'}</td>`});
-    tr.innerHTML=h;tb.appendChild(tr);
-  });
+// ========== P1 ==========
+function doP1(){
+  const tb=$('tb1');tb.innerHTML='';
+  P1C.forEach((c,ci)=>{const tr=document.createElement('tr');let h=`<td>${c}</td>`;WLS.forEach((w,wi)=>{const v=D1[`${wi}_${ci}`];h+=`<td style="color:var(--t2)">${v!=null?v.toFixed(4):'-'}</td>`});tr.innerHTML=h;tb.appendChild(tr)});
 
-  const regs={},r2s={},slopes={};
-  WLS.forEach((wl,wi)=>{
-    const xs=[],ys=[];P1_CONCS.forEach((c,ci)=>{const v=D1[`${wi}_${ci}`];if(v!=null&&c>0){xs.push(c);ys.push(v)}});
-    if(xs.length>=2){const r=linReg(xs,ys);regs[wl]=r;r2s[wl]=r.r2;slopes[wl]=r.slope}
-  });
+  const rg={},r2={},sl={};
+  WLS.forEach((wl,wi)=>{const xs=[],ys=[];P1C.forEach((c,ci)=>{const v=D1[`${wi}_${ci}`];if(v!=null&&c>0){xs.push(c);ys.push(v)}});if(xs.length>=2){const r=lr(xs,ys);rg[wl]=r;r2[wl]=r.r2;sl[wl]=r.s}});
+  const rk=Object.entries(sl).sort((a,b)=>(r2[b[0]]*b[1])-(r2[a[0]]*a[1]));
+  if(rk.length>=3)sWL=rk.slice(0,3).map(r=>parseInt(r[0]));
 
-  const ranked=Object.entries(slopes).sort((a,b)=>(r2s[b[0]]*b[1])-(r2s[a[0]]*a[1]));
-  if(ranked.length>=3)selWL=ranked.slice(0,3).map(r=>parseInt(r[0]));
+  $('p1s').innerHTML=WLS.filter(w=>rg[w]).map((w,i)=>`<div class="stat ${r2[w]>.99?'good':r2[w]>.95?'warn':'bad'}"><div class="v">${r2[w].toFixed(4)}</div><div class="l">${w}nm · slope ${sl[w]?.toFixed(4)}</div></div>`).join('');
 
-  el('p1sg').innerHTML=WLS.filter(wl=>regs[wl]).map(wl=>`
-    <div class="st ${r2s[wl]>.99?'good':r2s[wl]>.95?'warn':'bad'}"><div class="v">${r2s[wl].toFixed(4)}</div><div class="l">${wl}nm R²</div>
-    <div style="font-size:.68rem;color:var(--ts)">감도: ${slopes[wl].toFixed(4)}</div></div>`).join('');
+  dc('c1a');dc('c1b');
+  const ds=[];WLS.forEach((wl,wi)=>{const pts=[];P1C.forEach((c,ci)=>{const v=D1[`${wi}_${ci}`];if(v!=null)pts.push({x:c,y:v})});if(pts.length)ds.push({label:`${wl}nm`,data:pts,borderColor:CL[wi],backgroundColor:CLa[wi],pointRadius:4,pointHoverRadius:7,showLine:true,borderWidth:2,tension:.1})});
+  ch.c1a=new Chart($('c1a'),{type:'scatter',data:{datasets:ds},options:{responsive:true,maintainAspectRatio:false,scales:{x:{title:{display:true,text:'Concentration (μM)'},grid:{color:'rgba(30,45,71,.3)'}},y:{title:{display:true,text:'Absorbance'},beginAtZero:true,grid:{color:'rgba(30,45,71,.3)'}}},plugins:{legend:{position:'bottom'}}}});
 
-  destroyChart('c1cal');destroyChart('c1sens');
+  const wL=WLS.filter(w=>rg[w]);
+  ch.c1b=new Chart($('c1b'),{type:'bar',data:{labels:wL.map(w=>w+'nm'),datasets:[
+    {label:'R²',data:wL.map(w=>r2[w]),backgroundColor:wL.map((_,i)=>CL[i]+'55'),borderColor:wL.map((_,i)=>CL[i]),borderWidth:1,borderRadius:6,yAxisID:'y'},
+    {label:'Sensitivity',data:wL.map(w=>sl[w]),backgroundColor:wL.map((_,i)=>CL[i]+'33'),borderColor:wL.map((_,i)=>CL[i]),borderWidth:1,borderDash:[4,2],borderRadius:6,yAxisID:'y1'}
+  ]},options:{responsive:true,maintainAspectRatio:false,scales:{y:{beginAtZero:true,max:1.1,position:'left',title:{display:true,text:'R²'},grid:{color:'rgba(30,45,71,.3)'}},y1:{beginAtZero:true,position:'right',title:{display:true,text:'Slope'},grid:{drawOnChartArea:false}}},plugins:{legend:{position:'bottom'}}}});
+
+  const gs=[];WLS.forEach((w,wi)=>{const vs=[];P1C.forEach((c,ci)=>{if(c>0){const v=D1[`${wi}_${ci}`];if(v!=null)vs.push(v)}});if(vs.length)gs.push(vs)});
+  if(gs.length>=2){const a=anova1(gs);$('p1x').innerHTML=`<h2>One-Way ANOVA + Interpretation</h2><div class="abox ${a.sig?'ok':'wn'}"><h4>F(${a.dB},${a.dW}) = ${a.F.toFixed(3)}, p ${a.p<.001?'< 0.001':'= '+a.p.toFixed(4)}</h4><p>${a.sig?'Significant difference between wavelengths (p < 0.05)':'No significant difference detected'}</p><p>Optimal: <strong>${rk[0]?.[0]}nm</strong> · Phase 2–3 wavelengths: ${sWL.join(', ')} nm</p></div>`}
+}
+
+// ========== P2 ==========
+function doP2(){
+  $('th2').innerHTML=`<tr><th>°C</th>${sWL.map(w=>`<th>${w}nm</th>`).join('')}</tr>`;
+  const tb=$('tb2');tb.innerHTML='';TEMPS.forEach(t=>{const tr=document.createElement('tr');let h=`<td>${t}°C</td>`;sWL.forEach((w,wi)=>{const v=D2[`${t}_${wi}`];h+=`<td style="color:var(--t2)">${v!=null?v.toFixed(4):'-'}</td>`});tr.innerHTML=h;tb.appendChild(tr)});
+
+  dc('c2a');
+  const ds=sWL.map((wl,wi)=>{const pts=[];TEMPS.forEach(t=>{const v=D2[`${t}_${wi}`];if(v!=null)pts.push({x:t,y:v})});return{label:wl+'nm',data:pts,borderColor:CL[wi],backgroundColor:CLa[wi],pointRadius:5,pointHoverRadius:8,showLine:true,borderWidth:2,tension:.3}});
+  ch.c2a=new Chart($('c2a'),{type:'scatter',data:{datasets:ds},options:{responsive:true,maintainAspectRatio:false,scales:{x:{title:{display:true,text:'Temperature (°C)'},grid:{color:'rgba(30,45,71,.3)'}},y:{title:{display:true,text:'Absorbance'},beginAtZero:true,grid:{color:'rgba(30,45,71,.3)'}}},plugins:{legend:{position:'bottom'}}}});
+
+  let hm=`<div class="hm-row" style="grid-template-columns:48px repeat(${sWL.length},1fr)"><div></div>${sWL.map(w=>`<div style="text-align:center;font-size:.72rem;color:var(--t3);font-weight:600">${w}nm</div>`).join('')}</div>`;
+  TEMPS.forEach(t=>{hm+=`<div class="hm-row" style="grid-template-columns:48px repeat(${sWL.length},1fr)"><div class="hm-label">${t}°C</div>`;sWL.forEach((w,wi)=>{const v=D2[`${t}_${wi}`],ref=D2[`25_${wi}`];if(v!=null&&ref!=null&&ref>0){const p=((v-ref)/ref*100),abs=Math.abs(p),clr=p>3?`hsl(${Math.max(0,30-abs)},80%,45%)`:p<-3?`hsl(${210+abs},70%,45%)`:'hsl(160,60%,35%)';hm+=`<div class="hm-cell" style="background:${clr}">${p>0?'+':''}${p.toFixed(1)}%</div>`}else hm+=`<div class="hm-cell" style="background:var(--bg2);color:var(--t3)">-</div>`});hm+='</div>'});
+  $('p2hm').innerHTML=hm;
+
+  const d2={};TEMPS.forEach(t=>{d2[t]=sWL.map((w,wi)=>D2[`${t}_${wi}`]??null)});const a=anova2(d2,TEMPS,sWL);
+  $('p2x').innerHTML=`<h2>Two-Way ANOVA (Temp × λ)</h2><div class="abox ${a.pR<.05?'ok':'wn'}"><h4>Results</h4><ul><li>Temperature: F=${a.Fr.toFixed(3)}, p ${a.pR<.001?'< 0.001':'= '+a.pR.toFixed(4)} ${a.pR<.05?'✓ Significant':'✗ Not significant'}</li><li>Wavelength: F=${a.Fc.toFixed(3)}, p ${a.pC<.001?'< 0.001':'= '+a.pC.toFixed(4)} ${a.pC<.05?'✓ Significant':'✗ Not significant'}</li></ul><p>At 60°C: check for dimer dissociation → monomer increase + blue shift</p></div>`
+}
+
+// ========== P3 ==========
+function doP3(){
+  $('th3').innerHTML=`<tr><th>pH</th>${sWL.map(w=>`<th>${w}nm</th>`).join('')}</tr>`;
+  const tb=$('tb3');tb.innerHTML='';PHS.forEach(ph=>{const tr=document.createElement('tr');let h=`<td>pH ${ph}</td>`;sWL.forEach((w,wi)=>{const v=D3[`${ph}_${wi}`];h+=`<td style="color:var(--t2)">${v!=null?v.toFixed(4):'-'}</td>`});tr.innerHTML=h;tb.appendChild(tr)});
+
+  dc('c3a');
+  const ds=sWL.map((wl,wi)=>{const pts=[];PHS.forEach(ph=>{const v=D3[`${ph}_${wi}`];if(v!=null)pts.push({x:ph,y:v})});return{label:wl+'nm',data:pts,borderColor:CL[wi],backgroundColor:CLa[wi],pointRadius:5,pointHoverRadius:8,showLine:true,borderWidth:2,tension:.3}});
+  ch.c3a=new Chart($('c3a'),{type:'scatter',data:{datasets:ds},options:{responsive:true,maintainAspectRatio:false,scales:{x:{title:{display:true,text:'pH'},ticks:{stepSize:2},grid:{color:'rgba(30,45,71,.3)'}},y:{title:{display:true,text:'Absorbance'},beginAtZero:true,grid:{color:'rgba(30,45,71,.3)'}}},plugins:{legend:{position:'bottom'}}}});
+
+  let hm=`<div class="hm-row" style="grid-template-columns:48px repeat(${sWL.length},1fr)"><div></div>${sWL.map(w=>`<div style="text-align:center;font-size:.72rem;color:var(--t3);font-weight:600">${w}nm</div>`).join('')}</div>`;
+  PHS.forEach(ph=>{hm+=`<div class="hm-row" style="grid-template-columns:48px repeat(${sWL.length},1fr)"><div class="hm-label">pH ${ph}</div>`;sWL.forEach((w,wi)=>{const v=D3[`${ph}_${wi}`],ref=D3[`7_${wi}`];if(v!=null&&ref!=null&&ref>0){const p=((v-ref)/ref*100),abs=Math.abs(p),clr=p>3?`hsl(160,60%,35%)`:p<-3?`hsl(${Math.min(360,0+abs*.8)},75%,45%)`:'hsl(210,60%,40%)';hm+=`<div class="hm-cell" style="background:${clr}">${p>0?'+':''}${p.toFixed(1)}%</div>`}else hm+=`<div class="hm-cell" style="background:var(--bg2);color:var(--t3)">-</div>`});hm+='</div>'});
+  $('p3hm').innerHTML=hm;
+
+  const allV=[];PHS.forEach(ph=>{sWL.forEach((w,wi)=>{const v=D3[`${ph}_${wi}`];if(v!=null)allV.push({ph,wl:w,v})})});
+  if(allV.length>=4){const vs=allV.map(d=>d.v),{q1,q3}=iqr(vs),iq=q3-q1,lo=q1-1.5*iq,hi=q3+1.5*iq,an=allV.filter(d=>d.v<lo||d.v>hi);
+  $('p3y').innerHTML=`<h2>Anomaly Detection — leuco-MB</h2><div class="abox ${an.length?'wn':'ok'}"><h4>IQR Outlier Detection</h4><ul><li>Q1=${q1.toFixed(4)}, Q3=${q3.toFixed(4)}, IQR=${iq.toFixed(4)}</li><li>Normal: [${lo.toFixed(4)}, ${hi.toFixed(4)}]</li><li>Anomalies: ${an.length} ${an.map(a=>`(pH${a.ph} ${a.wl}nm: ${a.v.toFixed(4)})`).join(', ')}</li></ul><p>${an.some(a=>a.ph<=5)?'<strong>pH ≤ 5: absorbance drop detected → leuco-MB (colorless) transition</strong>':'No clear transition point detected'}</p></div>`}
+
+  const d3={};PHS.forEach(ph=>{d3[ph]=sWL.map((w,wi)=>D3[`${ph}_${wi}`]??null)});const a=anova2(d3,PHS,sWL);
+  $('p3x').innerHTML=`<h2>Two-Way ANOVA (pH × λ)</h2><div class="abox ${a.pR<.05?'ok':'wn'}"><h4>Results</h4><ul><li>pH effect: F=${a.Fr.toFixed(3)}, p ${a.pR<.001?'< 0.001':'= '+a.pR.toFixed(4)} ${a.pR<.05?'✓':'✗'}</li><li>λ effect: F=${a.Fc.toFixed(3)}, p ${a.pC<.001?'< 0.001':'= '+a.pC.toFixed(4)} ${a.pC<.05?'✓':'✗'}</li></ul></div>`
+}
+
+// ========== AI ==========
+function doAI(){
   const ds=[];
-  WLS.forEach((wl,wi)=>{
-    const pts=[];P1_CONCS.forEach((c,ci)=>{const v=D1[`${wi}_${ci}`];if(v!=null)pts.push({x:c,y:v})});
-    if(pts.length)ds.push({label:`${wl}nm`,data:pts,borderColor:COLORS[wi],backgroundColor:COLORS[wi]+'33',pointRadius:4,showLine:true,borderWidth:2});
-  });
-  charts.c1cal=new Chart(el('c1cal'),{type:'scatter',data:{datasets:ds},options:{responsive:true,maintainAspectRatio:false,scales:{x:{title:{display:true,text:'농도 (μM)'}},y:{title:{display:true,text:'흡광도'},beginAtZero:true}},plugins:{legend:{position:'bottom',labels:{font:{size:10}}}}}});
+  WLS.forEach((wl,wi)=>{P1C.forEach((c,ci)=>{const v=D1[`${wi}_${ci}`];if(v!=null&&c>0)ds.push({wl,temp:25,ph:7,conc:c,abs:v})})});
+  TEMPS.forEach(t=>{sWL.forEach((wl,wi)=>{const v=D2[`${t}_${wi}`];if(v!=null)ds.push({wl,temp:t,ph:7,conc:10,abs:v})})});
+  PHS.forEach(ph=>{sWL.forEach((wl,wi)=>{const v=D3[`${ph}_${wi}`];if(v!=null)ds.push({wl,temp:25,ph,conc:10,abs:v})})});
+  if(ds.length<5)return;
 
-  const wlL=WLS.filter(wl=>regs[wl]);
-  charts.c1sens=new Chart(el('c1sens'),{type:'bar',data:{labels:wlL.map(w=>w+'nm'),datasets:[
-    {label:'R²',data:wlL.map(w=>r2s[w]),backgroundColor:'rgba(26,115,232,.5)',yAxisID:'y'},
-    {label:'감도(기울기)',data:wlL.map(w=>slopes[w]),backgroundColor:'rgba(15,157,88,.5)',yAxisID:'y1'}
-  ]},options:{responsive:true,maintainAspectRatio:false,scales:{y:{beginAtZero:true,max:1.1,position:'left',title:{display:true,text:'R²'}},y1:{beginAtZero:true,position:'right',title:{display:true,text:'기울기'},grid:{drawOnChartArea:false}}},plugins:{legend:{position:'bottom',labels:{font:{size:10}}}}}});
+  const st=[...$('aiProg').children];st.forEach(s=>s.className='prog-s');
+  st[0].className='prog-s cur';
+  const F=ds.map(d=>[d.wl,d.temp,d.ph,d.conc]),T=ds.map(d=>d.abs);
+  const mi=F[0].map((_,j)=>Math.min(...F.map(f=>f[j]))),ma=F[0].map((_,j)=>Math.max(...F.map(f=>f[j])));
+  const N=F.map(f=>f.map((v,j)=>ma[j]-mi[j]?(v-mi[j])/(ma[j]-mi[j]):0));
+  st[0].className='prog-s done';st[1].className='prog-s cur';
 
-  // ANOVA
-  const groups=[];WLS.forEach((wl,wi)=>{const vals=[];P1_CONCS.forEach((c,ci)=>{if(c>0){const v=D1[`${wi}_${ci}`];if(v!=null)vals.push(v)}});if(vals.length)groups.push(vals)});
-  if(groups.length>=2){
-    const a=anova1(groups);
-    el('p1anova').innerHTML=`<h2>일원 ANOVA + 자동 해석</h2>
-    <div class="ab ${a.sig?'ok':'wn'}"><h4>F(${a.dfB}, ${a.dfW}) = ${a.F.toFixed(3)}, p ${a.p<.001?'< 0.001':'= '+a.p.toFixed(4)}</h4>
-    <p>${a.sig?'파장 간 흡광도에 통계적으로 유의한 차이 존재 (p < 0.05)':'유의한 차이 없음'}</p>
-    <p>최적 파장: <strong>${ranked[0]?.[0]}nm</strong> (R²=${r2s[ranked[0]?.[0]]?.toFixed(4)}, 최고 감도)</p>
-    <p>Phase 2,3 측정 파장: ${selWL.join(', ')} nm (상위 3개)</p></div>`;
-  }
-}
-
-// ==================== P2: Temperature ====================
-function analyzeP2(){
-  el('th2').innerHTML=`<tr><th>온도(°C)</th>${selWL.map(w=>`<th>${w}nm</th>`).join('')}</tr>`;
-  const tb=el('tb2');tb.innerHTML='';
-  TEMPS.forEach(t=>{
-    const tr=document.createElement('tr');
-    let h=`<td style="font-weight:600">${t}°C</td>`;
-    selWL.forEach((wl,wi)=>{const v=D2[`${t}_${wi}`];h+=`<td>${v!=null?v.toFixed(4):'-'}</td>`});
-    tr.innerHTML=h;tb.appendChild(tr);
-  });
-
-  destroyChart('c2line');
-  const ds=selWL.map((wl,wi)=>{
-    const pts=[];TEMPS.forEach(t=>{const v=D2[`${t}_${wi}`];if(v!=null)pts.push({x:t,y:v})});
-    return{label:wl+'nm',data:pts,borderColor:COLORS[wi],backgroundColor:COLORS[wi]+'33',pointRadius:5,showLine:true,borderWidth:2,tension:.3};
-  });
-  charts.c2line=new Chart(el('c2line'),{type:'scatter',data:{datasets:ds},options:{responsive:true,maintainAspectRatio:false,scales:{x:{title:{display:true,text:'온도 (°C)'}},y:{title:{display:true,text:'흡광도'},beginAtZero:true}},plugins:{legend:{position:'bottom',labels:{font:{size:10}}}}}});
-
-  // Heatmap
-  let hm=`<div style="display:grid;grid-template-columns:50px repeat(${selWL.length},1fr);gap:2px"><div></div>${selWL.map(w=>`<div style="font-size:.72rem;font-weight:600;text-align:center">${w}nm</div>`).join('')}</div>`;
-  TEMPS.forEach(t=>{
-    hm+=`<div style="display:grid;grid-template-columns:50px repeat(${selWL.length},1fr);gap:2px"><div style="font-size:.72rem;font-weight:600;display:flex;align-items:center">${t}°C</div>`;
-    selWL.forEach((w,wi)=>{
-      const v=D2[`${t}_${wi}`],ref=D2[`25_${wi}`];
-      if(v!=null&&ref!=null&&ref>0){const p=((v-ref)/ref*100);const c=p>5?`rgba(211,47,47,${Math.min(Math.abs(p)/30,.9)})`:p<-5?`rgba(21,101,192,${Math.min(Math.abs(p)/30,.9)})`:'rgba(15,157,88,.5)';
-      hm+=`<div class="hm-cell" style="background:${c}">${p>0?'+':''}${p.toFixed(1)}%</div>`}else hm+=`<div class="hm-cell" style="background:#eee;color:#999">-</div>`;
-    });hm+='</div>';
-  });
-  el('p2hm').innerHTML=hm;
-
-  const d2={};TEMPS.forEach(t=>{d2[t]=selWL.map((w,wi)=>D2[`${t}_${wi}`]??null)});
-  const a=anova2(d2,TEMPS,selWL);
-  el('p2anova').innerHTML=`<h2>이원 ANOVA (온도 × 파장) + 자동 해석</h2>
-  <div class="ab ${a.pR<.05?'ok':'wn'}"><h4>결과</h4><ul>
-  <li>온도 효과: F = ${a.Fr.toFixed(3)}, p ${a.pR<.001?'< 0.001':'= '+a.pR.toFixed(4)} ${a.pR<.05?'→ 유의':'→ 비유의'}</li>
-  <li>파장 효과: F = ${a.Fc.toFixed(3)}, p ${a.pC<.001?'< 0.001':'= '+a.pC.toFixed(4)} ${a.pC<.05?'→ 유의':'→ 비유의'}</li></ul>
-  <p>60°C에서 흡광도 증가 시 → MB 이합체(dimer) 분리로 단량체 증가 / blue shift 확인 필요</p></div>`;
-}
-
-// ==================== P3: pH ====================
-function analyzeP3(){
-  el('th3').innerHTML=`<tr><th>pH</th>${selWL.map(w=>`<th>${w}nm</th>`).join('')}</tr>`;
-  const tb=el('tb3');tb.innerHTML='';
-  PHS.forEach(ph=>{
-    const tr=document.createElement('tr');
-    let h=`<td style="font-weight:600">pH ${ph}</td>`;
-    selWL.forEach((w,wi)=>{const v=D3[`${ph}_${wi}`];h+=`<td>${v!=null?v.toFixed(4):'-'}</td>`});
-    tr.innerHTML=h;tb.appendChild(tr);
-  });
-
-  destroyChart('c3line');
-  const ds=selWL.map((wl,wi)=>{
-    const pts=[];PHS.forEach(ph=>{const v=D3[`${ph}_${wi}`];if(v!=null)pts.push({x:ph,y:v})});
-    return{label:wl+'nm',data:pts,borderColor:COLORS[wi],backgroundColor:COLORS[wi]+'33',pointRadius:5,showLine:true,borderWidth:2,tension:.3};
-  });
-  charts.c3line=new Chart(el('c3line'),{type:'scatter',data:{datasets:ds},options:{responsive:true,maintainAspectRatio:false,scales:{x:{title:{display:true,text:'pH'},ticks:{stepSize:2}},y:{title:{display:true,text:'흡광도'},beginAtZero:true}},plugins:{legend:{position:'bottom',labels:{font:{size:10}}}}}});
-
-  let hm=`<div style="display:grid;grid-template-columns:50px repeat(${selWL.length},1fr);gap:2px"><div></div>${selWL.map(w=>`<div style="font-size:.72rem;font-weight:600;text-align:center">${w}nm</div>`).join('')}</div>`;
-  PHS.forEach(ph=>{
-    hm+=`<div style="display:grid;grid-template-columns:50px repeat(${selWL.length},1fr);gap:2px"><div style="font-size:.72rem;font-weight:600;display:flex;align-items:center">pH ${ph}</div>`;
-    selWL.forEach((w,wi)=>{
-      const v=D3[`${ph}_${wi}`],ref=D3[`7_${wi}`];
-      if(v!=null&&ref!=null&&ref>0){const p=((v-ref)/ref*100);const c=p>5?`rgba(15,157,88,${Math.min(Math.abs(p)/40,.85)})`:p<-5?`rgba(211,47,47,${Math.min(Math.abs(p)/40,.85)})`:'rgba(26,115,232,.4)';
-      hm+=`<div class="hm-cell" style="background:${c}">${p>0?'+':''}${p.toFixed(1)}%</div>`}else hm+=`<div class="hm-cell" style="background:#eee;color:#999">-</div>`;
-    });hm+='</div>';
-  });
-  el('p3hm').innerHTML=hm;
-
-  // Anomaly
-  const allV=[];PHS.forEach(ph=>{selWL.forEach((w,wi)=>{const v=D3[`${ph}_${wi}`];if(v!=null)allV.push({ph,wl:w,v})})});
-  if(allV.length>=4){
-    const vals=allV.map(d=>d.v);const{q1,q3,iqr:iq}=iqr(vals);const lo=q1-1.5*iq,hi=q3+1.5*iq;
-    const anom=allV.filter(d=>d.v<lo||d.v>hi);
-    el('p3anomaly').innerHTML=`<h2>Anomaly Detection (leuco-MB 전환점)</h2>
-    <div class="ab ${anom.length?'wn':'ok'}"><h4>IQR 이상치 탐지</h4>
-    <ul><li>Q1=${q1.toFixed(4)}, Q3=${q3.toFixed(4)}, IQR=${iq.toFixed(4)}</li>
-    <li>정상: [${lo.toFixed(4)}, ${hi.toFixed(4)}]</li>
-    <li>이상치: ${anom.length}개 ${anom.map(a=>`(pH${a.ph}, ${a.wl}nm: ${a.v.toFixed(4)})`).join(', ')}</li></ul>
-    <p>${anom.some(a=>a.ph<=5)?'<strong>pH ≤ 5에서 흡광도 급감 → leuco-MB(무색) 전환 감지</strong>':'전환점 불명확'}</p></div>`;
-  }
-
-  const d3={};PHS.forEach(ph=>{d3[ph]=selWL.map((w,wi)=>D3[`${ph}_${wi}`]??null)});
-  const a=anova2(d3,PHS,selWL);
-  el('p3anova').innerHTML=`<h2>이원 ANOVA (pH × 파장) + 자동 해석</h2>
-  <div class="ab ${a.pR<.05?'ok':'wn'}"><h4>결과</h4><ul>
-  <li>pH 효과: F = ${a.Fr.toFixed(3)}, p ${a.pR<.001?'< 0.001':'= '+a.pR.toFixed(4)} ${a.pR<.05?'→ 유의':'→ 비유의'}</li>
-  <li>파장 효과: F = ${a.Fc.toFixed(3)}, p ${a.pC<.001?'< 0.001':'= '+a.pC.toFixed(4)} ${a.pC<.05?'→ 유의':'→ 비유의'}</li></ul></div>`;
-}
-
-// ==================== AI4SE ====================
-function runAI(){
-  const dataset=[];
-  WLS.forEach((wl,wi)=>{P1_CONCS.forEach((c,ci)=>{const v=D1[`${wi}_${ci}`];if(v!=null&&c>0)dataset.push({wl,temp:25,ph:7,conc:c,abs:v})})});
-  TEMPS.forEach(t=>{selWL.forEach((wl,wi)=>{const v=D2[`${t}_${wi}`];if(v!=null)dataset.push({wl,temp:t,ph:7,conc:10,abs:v})})});
-  PHS.forEach(ph=>{selWL.forEach((wl,wi)=>{const v=D3[`${ph}_${wi}`];if(v!=null)dataset.push({wl,temp:25,ph,conc:10,abs:v})})});
-
-  if(dataset.length<5)return;
-
-  const steps=[...el('aiProg').children];
-  steps.forEach(s=>s.className='prog-step');
-
-  // Normalize
-  steps[0].className='prog-step cur';
-  const feats=dataset.map(d=>[d.wl,d.temp,d.ph,d.conc]),tgts=dataset.map(d=>d.abs);
-  const fN=['파장','온도','pH','농도'];
-  const mins=feats[0].map((_,j)=>Math.min(...feats.map(f=>f[j])));
-  const maxs=feats[0].map((_,j)=>Math.max(...feats.map(f=>f[j])));
-  const norm=feats.map(f=>f.map((v,j)=>maxs[j]-mins[j]?(v-mins[j])/(maxs[j]-mins[j]):0));
-  steps[0].className='prog-step done';
-
-  // Ridge
-  steps[1].className='prog-step cur';
-  const lam=.1,Xa=norm.map(r=>[1,...r]),p=Xa[0].length,n=Xa.length;
+  const lam=.1,Xa=N.map(r=>[1,...r]),p=Xa[0].length,n=Xa.length;
   const XtX=Array(p).fill(0).map(()=>Array(p).fill(0)),XtY=Array(p).fill(0);
-  for(let i=0;i<n;i++)for(let j=0;j<p;j++){XtY[j]+=Xa[i][j]*tgts[i];for(let k=0;k<p;k++)XtX[j][k]+=Xa[i][j]*Xa[i][k]}
+  for(let i=0;i<n;i++)for(let j=0;j<p;j++){XtY[j]+=Xa[i][j]*T[i];for(let k=0;k<p;k++)XtX[j][k]+=Xa[i][j]*Xa[i][k]}
   for(let j=1;j<p;j++)XtX[j][j]+=lam;
   const A=XtX.map((r,i)=>[...r,XtY[i]]);
   for(let i=0;i<p;i++){let mr=i;for(let k=i+1;k<p;k++)if(Math.abs(A[k][i])>Math.abs(A[mr][i]))mr=k;[A[i],A[mr]]=[A[mr],A[i]];for(let k=i+1;k<p;k++){const f=A[k][i]/(A[i][i]||1e-30);for(let j=i;j<=p;j++)A[k][j]-=f*A[i][j]}}
   const w=Array(p).fill(0);for(let i=p-1;i>=0;i--){w[i]=A[i][p];for(let j=i+1;j<p;j++)w[i]-=A[i][j]*w[j];w[i]/=(A[i][i]||1e-30)}
-  const preds=Xa.map(x=>x.reduce((s,v,j)=>s+v*w[j],0));
-  const r2=linReg(preds,tgts).r2;
-  const rmse=Math.sqrt(preds.reduce((s,pr,i)=>s+(pr-tgts[i])**2,0)/n);
-  const coefs=w.slice(1).map(Math.abs),cSum=coefs.reduce((s,v)=>s+v,0)||1,imp=coefs.map(c=>c/cSum*100);
-  steps[1].className='prog-step done';
+  const preds=Xa.map(x=>x.reduce((s,v,j)=>s+v*w[j],0)),r2=lr(preds,T).r2,rmse=Math.sqrt(preds.reduce((s,pr,i)=>s+(pr-T[i])**2,0)/n);
+  const cf=w.slice(1).map(Math.abs),cs=cf.reduce((s,v)=>s+v,0)||1,imp=cf.map(c=>c/cs*100);
+  st[1].className='prog-s done';st[2].className='prog-s cur';
 
-  // BO
-  steps[2].className='prog-step cur';
-  function predict(wl,t,ph,c){const nf=[(wl-mins[0])/(maxs[0]-mins[0]||1),(t-mins[1])/(maxs[1]-mins[1]||1),(ph-mins[2])/(maxs[2]-mins[2]||1),(c-mins[3])/(maxs[3]-mins[3]||1)];return w[0]+nf.reduce((s,v,j)=>s+v*w[j+1],0)}
+  function pred(wl,t,ph,c){const nf=[(wl-mi[0])/(ma[0]-mi[0]||1),(t-mi[1])/(ma[1]-mi[1]||1),(ph-mi[2])/(ma[2]-mi[2]||1),(c-mi[3])/(ma[3]-mi[3]||1)];return w[0]+nf.reduce((s,v,j)=>s+v*w[j+1],0)}
   const wS=[550,570,590,610,630,650,664,680,700],tS=[4,15,25,35,40,50,60],phS=[3,5,7,9,11];
-  const bo=[];let bestA=-Infinity,bestC=null;
-  for(let it=0;it<30;it++){
-    let cw,ct,cp;
-    if(it<5){cw=wS[Math.floor(Math.random()*wS.length)];ct=tS[Math.floor(Math.random()*tS.length)];cp=phS[Math.floor(Math.random()*phS.length)]}
-    else{const bp=bo.reduce((b,h)=>h.abs>b.abs?h:b,bo[0]);
-      cw=wS[Math.min(wS.length-1,Math.max(0,wS.indexOf(bp.wl)+(Math.random()>.5?1:-1)*Math.ceil(Math.random()*2)))]||664;
-      ct=tS[Math.min(tS.length-1,Math.max(0,tS.indexOf(bp.temp)+(Math.random()>.5?1:-1)*Math.ceil(Math.random()*2)))]||25;
-      cp=phS[Math.min(phS.length-1,Math.max(0,phS.indexOf(bp.ph)+(Math.random()>.5?1:-1)*Math.ceil(Math.random()*2)))]||7}
-    const ca=predict(cw,ct,cp,10);bo.push({iter:it+1,wl:cw,temp:ct,ph:cp,abs:ca});
-    if(ca>bestA){bestA=ca;bestC={wl:cw,temp:ct,ph:cp}}
-  }
-  steps[2].className='prog-step done';
+  const bo=[];let bA=-Infinity,bC=null;
+  for(let it=0;it<30;it++){let cw,ct,cp;if(it<5){cw=wS[~~(Math.random()*wS.length)];ct=tS[~~(Math.random()*tS.length)];cp=phS[~~(Math.random()*phS.length)]}else{const bp=bo.reduce((b,h)=>h.abs>b.abs?h:b,bo[0]);cw=wS[Math.min(wS.length-1,Math.max(0,wS.indexOf(bp.wl)+(Math.random()>.5?1:-1)*~~(Math.random()*3)))]||664;ct=tS[Math.min(tS.length-1,Math.max(0,tS.indexOf(bp.temp)+(Math.random()>.5?1:-1)*~~(Math.random()*3)))]||25;cp=phS[Math.min(phS.length-1,Math.max(0,phS.indexOf(bp.ph)+(Math.random()>.5?1:-1)*~~(Math.random()*2)))]||7}const ca=pred(cw,ct,cp,10);bo.push({it:it+1,wl:cw,temp:ct,ph:cp,abs:ca});if(ca>bA){bA=ca;bC={wl:cw,temp:ct,ph:cp}}}
+  st[2].className='prog-s done';st[3].className='prog-s cur';
 
-  // Anomaly
-  steps[3].className='prog-step cur';
-  const{q1,q3,iqr:iq}=iqr(tgts);const lo=q1-1.5*iq,hi=q3+1.5*iq;
-  const anoms=dataset.map((d,i)=>({...d,idx:i,isA:d.abs<lo||d.abs>hi}));
-  const ac=anoms.filter(a=>a.isA).length;
-  steps[3].className='prog-step done';
+  const{q1,q3}=iqr(T),iq=q3-q1,lo=q1-1.5*iq,hi=q3+1.5*iq;
+  const anoms=ds.map((d,i)=>({...d,i,isA:d.abs<lo||d.abs>hi})),ac=anoms.filter(a=>a.isA).length;
+  st[3].className='prog-s done';
 
-  // Render
-  el('p4ml').innerHTML=`
-    <div class="st ${r2>.95?'good':'warn'}"><div class="v">${r2.toFixed(4)}</div><div class="l">Ridge R²</div></div>
-    <div class="st"><div class="v">${rmse.toFixed(4)}</div><div class="l">RMSE</div></div>
-    <div class="st"><div class="v">${n}</div><div class="l">데이터</div></div>
-    <div class="st ${ac?'warn':'good'}"><div class="v">${ac}</div><div class="l">이상치</div></div>`;
+  $('p4s').innerHTML=`<div class="stat ${r2>.95?'good':'warn'}"><div class="v">${r2.toFixed(4)}</div><div class="l">Ridge R²</div></div><div class="stat"><div class="v">${rmse.toFixed(4)}</div><div class="l">RMSE</div></div><div class="stat"><div class="v">${n}</div><div class="l">Samples</div></div><div class="stat ${ac?'warn':'good'}"><div class="v">${ac}</div><div class="l">Anomalies</div></div>`;
 
-  destroyChart('c4pred');
-  charts.c4pred=new Chart(el('c4pred'),{type:'scatter',data:{datasets:[
-    {label:'예측 vs 실측',data:tgts.map((t,i)=>({x:t,y:preds[i]})),backgroundColor:'rgba(26,115,232,.6)',pointRadius:4},
-    {label:'y=x',data:[{x:0,y:0},{x:Math.max(...tgts)*1.1,y:Math.max(...tgts)*1.1}],borderColor:'rgba(211,47,47,.4)',borderDash:[5,3],pointRadius:0,showLine:true,type:'line'}
-  ]},options:{responsive:true,maintainAspectRatio:false,scales:{x:{title:{display:true,text:'실측'}},y:{title:{display:true,text:'예측'}}},plugins:{legend:{position:'bottom',labels:{font:{size:10}}}}}});
+  dc('c4a');dc('c4b');dc('c4c');dc('c4d');
+  ch.c4a=new Chart($('c4a'),{type:'scatter',data:{datasets:[{label:'Pred vs Actual',data:T.map((t,i)=>({x:t,y:preds[i]})),backgroundColor:'rgba(59,130,246,.6)',borderColor:'rgba(96,165,250,.8)',pointRadius:4,pointBorderWidth:1},{label:'y=x',data:[{x:0,y:0},{x:Math.max(...T)*1.1,y:Math.max(...T)*1.1}],borderColor:'rgba(239,68,68,.3)',borderDash:[5,3],pointRadius:0,showLine:true,type:'line'}]},options:{responsive:true,maintainAspectRatio:false,scales:{x:{title:{display:true,text:'Actual'},grid:{color:'rgba(30,45,71,.3)'}},y:{title:{display:true,text:'Predicted'},grid:{color:'rgba(30,45,71,.3)'}}},plugins:{legend:{position:'bottom'}}}});
 
-  destroyChart('c4feat');
-  charts.c4feat=new Chart(el('c4feat'),{type:'bar',data:{labels:fN,datasets:[{label:'중요도(%)',data:imp,backgroundColor:COLORS.slice(0,4).map(c=>c+'88'),borderColor:COLORS.slice(0,4),borderWidth:1}]},options:{responsive:true,maintainAspectRatio:false,indexAxis:'y',plugins:{legend:{display:false}}}});
+  const fN=['Wavelength','Temperature','pH','Concentration'];
+  ch.c4b=new Chart($('c4b'),{type:'bar',data:{labels:fN,datasets:[{data:imp,backgroundColor:CL.slice(0,4).map(c=>c+'66'),borderColor:CL.slice(0,4),borderWidth:1,borderRadius:8}]},options:{responsive:true,maintainAspectRatio:false,indexAxis:'y',scales:{x:{title:{display:true,text:'Importance (%)'},grid:{color:'rgba(30,45,71,.3)'}},y:{grid:{display:false}}},plugins:{legend:{display:false}}}});
 
-  destroyChart('c4bo');
   let bsf=[];let cb=-Infinity;bo.forEach(h=>{cb=Math.max(cb,h.abs);bsf.push(cb)});
-  charts.c4bo=new Chart(el('c4bo'),{type:'line',data:{labels:bo.map(h=>h.iter),datasets:[
-    {label:'탐색값',data:bo.map(h=>h.abs),borderColor:'rgba(26,115,232,.4)',backgroundColor:'rgba(26,115,232,.1)',pointRadius:3,fill:true},
-    {label:'최고값',data:bsf,borderColor:'#d32f2f',borderWidth:2,pointRadius:0}
-  ]},options:{responsive:true,maintainAspectRatio:false,scales:{x:{title:{display:true,text:'반복'}},y:{title:{display:true,text:'예측 흡광도'}}},plugins:{legend:{position:'bottom',labels:{font:{size:10}}}}}});
+  ch.c4c=new Chart($('c4c'),{type:'line',data:{labels:bo.map(h=>h.it),datasets:[{label:'Explored',data:bo.map(h=>h.abs),borderColor:'rgba(59,130,246,.4)',backgroundColor:'rgba(59,130,246,.08)',pointRadius:3,pointBackgroundColor:bo.map((h,i)=>h.abs===bsf[i]&&(i===0||bsf[i]>bsf[i-1])?'#10b981':'#3b82f6'),fill:true},{label:'Best so far',data:bsf,borderColor:'#ef4444',borderWidth:2,pointRadius:0}]},options:{responsive:true,maintainAspectRatio:false,scales:{x:{title:{display:true,text:'Iteration'},grid:{color:'rgba(30,45,71,.3)'}},y:{title:{display:true,text:'Predicted A'},grid:{color:'rgba(30,45,71,.3)'}}},plugins:{legend:{position:'bottom'}}}});
 
-  el('p4bolist').innerHTML=bo.map((h,i)=>{const isB=h.abs===bsf[i]&&(i===0||bsf[i]>bsf[i-1]);return`<div class="bo-iter" style="${isB?'background:#e8f5e9':''}"><span style="width:22px;font-weight:700;color:var(--ts)">#${h.iter}</span><span style="flex:0 0 170px;font-size:.73rem">${h.wl}nm/${h.temp}°C/pH${h.ph}</span><div class="bo-bar"><div class="bo-fill" style="width:${Math.max(5,h.abs/bestA*100)}%;background:${isB?'var(--ok)':'var(--p)'}"></div></div><span style="width:55px;text-align:right;font-weight:600;font-size:.78rem">${h.abs.toFixed(4)}</span>${isB?'<span class="bg bg-ok">BEST</span>':''}</div>`}).join('');
+  $('boList').innerHTML=bo.map((h,i)=>{const isB=h.abs===bsf[i]&&(i===0||bsf[i]>bsf[i-1]);return`<div class="bo-item ${isB?'best':''}"><span style="width:20px;font-weight:700;color:var(--t3);font-family:'JetBrains Mono',monospace;font-size:.7rem">${h.it}</span><span style="flex:0 0 155px;font-size:.72rem;color:var(--t2)">${h.wl}nm · ${h.temp}°C · pH${h.ph}</span><div class="bo-bar"><div class="bo-fill" style="width:${Math.max(5,h.abs/bA*100)}%;background:${isB?'var(--ok)':'var(--ac)'}"></div></div><span style="width:52px;text-align:right;font-weight:700;font-size:.76rem;font-family:'JetBrains Mono',monospace;color:var(--t1)">${h.abs.toFixed(3)}</span>${isB?'<span class="badge badge-ok" style="font-size:.6rem">BEST</span>':''}</div>`}).join('');
 
-  const totalSearch=wS.length*tS.length*phS.length;
-  el('p4boResult').innerHTML=`<h4>최적 조건</h4><p><strong>${bestC.wl}nm / ${bestC.temp}°C / pH ${bestC.ph}</strong> → 예측 A: ${bestA.toFixed(4)}</p><p>30회 탐색으로 수렴 (전탐색 ${totalSearch}회 대비 ${(30/totalSearch*100).toFixed(1)}% 효율)</p>`;
+  const tot=wS.length*tS.length*phS.length;
+  $('boRes').innerHTML=`<div class="abox ok"><h4>Optimal: ${bC.wl}nm · ${bC.temp}°C · pH ${bC.ph}</h4><p>Predicted A: ${bA.toFixed(4)} · 30 iterations / ${tot} total (${(30/tot*100).toFixed(1)}% efficiency)</p></div>`;
 
   // Surfaces
-  destroyChart('c4s0');destroyChart('c4s1');destroyChart('c4s2');
-  function mkSurf(cid,xL,yL,xN,yN,fn){
-    const data=[];xL.forEach((x,xi)=>{yL.forEach((y,yi)=>{data.push({x:xi,y:yi,v:fn(x,y)})})});
-    const vs=data.map(d=>d.v),vMin=Math.min(...vs),vMax=Math.max(...vs);
-    charts[cid]=new Chart(el(cid),{type:'bubble',data:{datasets:[{label:'A',data:data.map(d=>({x:d.x,y:d.y,r:10,v:d.v,backgroundColor:`rgba(${Math.round(33+((d.v-vMin)/(vMax-vMin||1))*180)},${Math.round(50+((d.v-vMin)/(vMax-vMin||1))*107)},${Math.round(200-((d.v-vMin)/(vMax-vMin||1))*100)},0.7)`)}))}]},
-    options:{responsive:true,maintainAspectRatio:false,scales:{x:{title:{display:true,text:xN},ticks:{callback:(_,i)=>xL[i]||''},min:-.5,max:xL.length-.5},y:{title:{display:true,text:yN},ticks:{callback:(_,i)=>yL[i]||''},min:-.5,max:yL.length-.5}},plugins:{legend:{display:false},tooltip:{callbacks:{label:c=>`${xN}:${xL[c.raw.x]}, ${yN}:${yL[c.raw.y]}, A:${c.raw.v.toFixed(4)}`}}}}});
-  }
-  mkSurf('c4s0',wS,tS,'파장(nm)','온도(°C)',(wl,t)=>predict(wl,t,7,10));
-  mkSurf('c4s1',wS,phS,'파장(nm)','pH',(wl,ph)=>predict(wl,25,ph,10));
-  mkSurf('c4s2',tS,phS,'온도(°C)','pH',(t,ph)=>predict(664,t,ph,10));
+  dc('c4s0');dc('c4s1');dc('c4s2');
+  function mkS(cid,xL,yL,xN,yN,fn){const data=[];xL.forEach((x,xi)=>{yL.forEach((y,yi)=>{data.push({x:xi,y:yi,v:fn(x,y)})})});const vs=data.map(d=>d.v),vMin=Math.min(...vs),vMax=Math.max(...vs);
+  ch[cid]=new Chart($(cid),{type:'bubble',data:{datasets:[{data:data.map(d=>{const t=(d.v-vMin)/(vMax-vMin||1);return{x:d.x,y:d.y,r:9,v:d.v,backgroundColor:`hsla(${210+t*30},${60+t*20}%,${25+t*35}%,.75)`}})}]},options:{responsive:true,maintainAspectRatio:false,scales:{x:{title:{display:true,text:xN},ticks:{callback:(_,i)=>xL[i]??''},min:-.5,max:xL.length-.5,grid:{color:'rgba(30,45,71,.3)'}},y:{title:{display:true,text:yN},ticks:{callback:(_,i)=>yL[i]??''},min:-.5,max:yL.length-.5,grid:{color:'rgba(30,45,71,.3)'}}},plugins:{legend:{display:false},tooltip:{callbacks:{label:c=>`${xN}:${xL[c.raw.x]} ${yN}:${yL[c.raw.y]} A:${c.raw.v.toFixed(4)}`}}}}})}
+  mkS('c4s0',wS,tS,'λ (nm)','Temp (°C)',(wl,t)=>pred(wl,t,7,10));
+  mkS('c4s1',wS,phS,'λ (nm)','pH',(wl,ph)=>pred(wl,25,ph,10));
+  mkS('c4s2',tS,phS,'Temp (°C)','pH',(t,ph)=>pred(664,t,ph,10));
 
-  // Anomaly chart
-  destroyChart('c4anom');
-  charts.c4anom=new Chart(el('c4anom'),{type:'scatter',data:{datasets:[
-    {label:'정상',data:anoms.filter(a=>!a.isA).map(a=>({x:a.idx,y:a.abs})),backgroundColor:'rgba(26,115,232,.5)',pointRadius:4},
-    {label:'이상치',data:anoms.filter(a=>a.isA).map(a=>({x:a.idx,y:a.abs})),backgroundColor:'rgba(211,47,47,.8)',pointRadius:6,pointStyle:'crossRot'}
-  ]},options:{responsive:true,maintainAspectRatio:false,scales:{x:{title:{display:true,text:'인덱스'}},y:{title:{display:true,text:'흡광도'}}},plugins:{legend:{position:'bottom',labels:{font:{size:10}}},annotation:{annotations:{hi:{type:'line',yMin:hi,yMax:hi,borderColor:'rgba(211,47,47,.5)',borderDash:[5,3],borderWidth:1},lo:{type:'line',yMin:lo,yMax:lo,borderColor:'rgba(211,47,47,.5)',borderDash:[5,3],borderWidth:1}}}}}});
+  ch.c4d=new Chart($('c4d'),{type:'scatter',data:{datasets:[{label:'Normal',data:anoms.filter(a=>!a.isA).map(a=>({x:a.i,y:a.abs})),backgroundColor:'rgba(59,130,246,.4)',borderColor:'rgba(96,165,250,.6)',pointRadius:4,pointBorderWidth:1},{label:'Anomaly',data:anoms.filter(a=>a.isA).map(a=>({x:a.i,y:a.abs})),backgroundColor:'rgba(239,68,68,.7)',borderColor:'#f87171',pointRadius:7,pointStyle:'crossRot',pointBorderWidth:2}]},options:{responsive:true,maintainAspectRatio:false,scales:{x:{title:{display:true,text:'Index'},grid:{color:'rgba(30,45,71,.3)'}},y:{title:{display:true,text:'Absorbance'},grid:{color:'rgba(30,45,71,.3)'}}},plugins:{legend:{position:'bottom'},annotation:{annotations:{hi:{type:'line',yMin:hi,yMax:hi,borderColor:'rgba(239,68,68,.3)',borderDash:[5,3],borderWidth:1},lo:{type:'line',yMin:lo,yMax:lo,borderColor:'rgba(239,68,68,.3)',borderDash:[5,3],borderWidth:1}}}}}});
 
   const ad=anoms.filter(a=>a.isA);
-  el('p4anomResult').innerHTML=`<h4>이상치 ${ac}개 / ${n}개</h4><p>IQR: [${lo.toFixed(4)}, ${hi.toFixed(4)}]</p>${ad.length?`<ul>${ad.map(a=>`<li>${a.wl}nm, ${a.temp}°C, pH${a.ph}: A=${a.abs.toFixed(4)} ${a.ph<=5?'← leuco-MB':a.abs>hi?'← 고흡광':'← 저흡광'}</li>`).join('')}</ul>`:''}`;
+  $('anomRes').innerHTML=`<div class="abox ${ac?'wn':'ok'}"><h4>${ac} Anomalies / ${n} Samples</h4><p>IQR bounds: [${lo.toFixed(4)}, ${hi.toFixed(4)}]</p>${ad.length?`<ul>${ad.map(a=>`<li>${a.wl}nm ${a.temp}°C pH${a.ph}: A=${a.abs.toFixed(4)} ${a.ph<=5?'← leuco-MB':a.abs>hi?'← high-A':'← low-A'}</li>`).join('')}</ul>`:''}</div>`
 }
 
-function surfTab(n){document.querySelectorAll('#p4 .tab').forEach((t,i)=>t.classList.toggle('act',i===n));['surf0','surf1','surf2'].forEach((id,i)=>el(id).classList.toggle('act',i===n))}
+function surfTab(n){document.querySelectorAll('.stab').forEach((t,i)=>t.classList.toggle('act',i===n));['sf0','sf1','sf2'].forEach((id,i)=>$(id).classList.toggle('act',i===n))}
 
-// ==================== REPORT ====================
-function genReport(){
-  const h0=D0.some(v=>v!==null),h1=Object.values(D1).some(v=>v!==null),h2=Object.values(D2).some(v=>v!==null),h3=Object.values(D3).some(v=>v!==null);
-  let h=`<div class="g4" style="margin-bottom:.8rem">
-  <div class="st ${h0?'good':'bad'}"><div class="v">${h0?'O':'X'}</div><div class="l">기본 측정</div></div>
-  <div class="st ${h1?'good':'bad'}"><div class="v">${h1?'O':'X'}</div><div class="l">Phase 1</div></div>
-  <div class="st ${h2?'good':'bad'}"><div class="v">${h2?'O':'X'}</div><div class="l">Phase 2</div></div>
-  <div class="st ${h3?'good':'bad'}"><div class="v">${h3?'O':'X'}</div><div class="l">Phase 3</div></div></div>`;
-
-  if(h0){
-    const bl=D0[11]||0,cor=D0.map(v=>v!==null?Math.max(0,v-bl):null);
-    const pairs=[];for(let i=0;i<11;i++)if(cor[i]!=null)pairs.push({x:concMgToMol(P0_CONCS_MG[i]),y:cor[i]});
-    if(pairs.length){const r=linReg(pairs.map(p=>p.x),pairs.map(p=>p.y));
-    h+=`<div class="ab ${r.r2>.99?'ok':'wn'}"><h4>기본 측정</h4><p>R²=${r.r2.toFixed(4)}, ε(실험)=${(r.slope/PL_DEFAULT).toFixed(0)} M⁻¹cm⁻¹</p></div>`}
-  }
-  if(h1){
-    const regs={};WLS.forEach((wl,wi)=>{const xs=[],ys=[];P1_CONCS.forEach((c,ci)=>{const v=D1[`${wi}_${ci}`];if(v!=null&&c>0){xs.push(c);ys.push(v)}});if(xs.length>=2)regs[wl]=linReg(xs,ys)});
-    const best=Object.entries(regs).sort((a,b)=>b[1].r2*b[1].slope-a[1].r2*a[1].slope)[0];
-    if(best)h+=`<div class="ab ok"><h4>Phase 1 — 최적 파장</h4><p>${best[0]}nm (R²=${best[1].r2.toFixed(4)})</p></div>`;
-  }
-  if(h2)h+=`<div class="ab"><h4>Phase 2 — 온도 안정성</h4><p>분석 완료. Phase 2 탭 참조.</p></div>`;
-  if(h3)h+=`<div class="ab wn"><h4>Phase 3 — pH 안정성</h4><p>분석 완료. leuco-MB 전환점 탐지 결과는 Phase 3 탭 참조.</p></div>`;
-  h+=`<div class="ab" style="border-left-color:#9c27b0;background:#f3e5f5"><h4>AI4SE 결론</h4><p>실험과학의 최적 조건 탐색과 SW 성능 최적화는 구조적으로 동형이며, AI4SE 기법이 생명과학 실험 자동화에 직접 활용 가능함을 실증하였다.</p></div>`;
-  el('report').innerHTML=h;
+// ========== REPORT ==========
+function report(){
+  const h0=D0.some(v=>v!=null),h1=Object.values(D1).some(v=>v!=null),h2=Object.values(D2).some(v=>v!=null),h3=Object.values(D3).some(v=>v!=null);
+  let h=`<div class="stats"><div class="stat ${h0?'good':'bad'}"><div class="v">${h0?'✓':'✗'}</div><div class="l">Basic</div></div><div class="stat ${h1?'good':'bad'}"><div class="v">${h1?'✓':'✗'}</div><div class="l">Phase 1</div></div><div class="stat ${h2?'good':'bad'}"><div class="v">${h2?'✓':'✗'}</div><div class="l">Phase 2</div></div><div class="stat ${h3?'good':'bad'}"><div class="v">${h3?'✓':'✗'}</div><div class="l">Phase 3</div></div></div>`;
+  if(h0){const bl=D0[11]||0,cor=D0.map(v=>v!=null?Math.max(0,v-bl):null),pairs=[];for(let i=0;i<11;i++)if(cor[i]!=null)pairs.push({x:c2m(P0M[i]),y:cor[i]});if(pairs.length){const r=lr(pairs.map(p=>p.x),pairs.map(p=>p.y));h+=`<div class="abox ${r.r2>.99?'ok':'wn'}"><h4>Basic: R²=${r.r2.toFixed(4)} · ε=${(r.s/PL0).toFixed(0)} M⁻¹cm⁻¹</h4></div>`}}
+  if(h1){const rg={};WLS.forEach((wl,wi)=>{const xs=[],ys=[];P1C.forEach((c,ci)=>{const v=D1[`${wi}_${ci}`];if(v!=null&&c>0){xs.push(c);ys.push(v)}});if(xs.length>=2)rg[wl]=lr(xs,ys)});const best=Object.entries(rg).sort((a,b)=>b[1].r2*b[1].s-a[1].r2*a[1].s)[0];if(best)h+=`<div class="abox ok"><h4>Phase 1: Optimal λ = ${best[0]}nm (R²=${best[1].r2.toFixed(4)})</h4></div>`}
+  if(h2)h+=`<div class="abox info"><h4>Phase 2: Temperature stability analyzed</h4></div>`;
+  if(h3)h+=`<div class="abox wn"><h4>Phase 3: pH stability + leuco-MB transition analyzed</h4></div>`;
+  h+=`<div class="abox purple"><h4>AI4SE Conclusion</h4><p>Optimal experimental condition search ≡ SW configuration optimization — structurally isomorphic. AI4SE techniques (Ridge, BO, Anomaly Detection) directly applicable to life science experiment automation.</p></div>`;
+  $('report').innerHTML=h
 }
 
-function exportAll(){
-  let csv='source,wavelength,temperature,pH,concentration_uM,absorbance\n';
-  WLS.forEach((wl,wi)=>{P1_CONCS.forEach((c,ci)=>{const v=D1[`${wi}_${ci}`];if(v!=null)csv+=`P1,${wl},25,7,${c},${v}\n`})});
-  TEMPS.forEach(t=>{selWL.forEach((wl,wi)=>{const v=D2[`${t}_${wi}`];if(v!=null)csv+=`P2,${wl},${t},7,10,${v}\n`})});
-  PHS.forEach(ph=>{selWL.forEach((wl,wi)=>{const v=D3[`${ph}_${wi}`];if(v!=null)csv+=`P3,${wl},25,${ph},10,${v}\n`})});
-  dl('mb_full_data.csv',csv);
-}
+function exportAll(){let c='source,wavelength,temperature,pH,concentration_uM,absorbance\n';WLS.forEach((wl,wi)=>{P1C.forEach((co,ci)=>{const v=D1[`${wi}_${ci}`];if(v!=null)c+=`P1,${wl},25,7,${co},${v}\n`})});TEMPS.forEach(t=>{sWL.forEach((wl,wi)=>{const v=D2[`${t}_${wi}`];if(v!=null)c+=`P2,${wl},${t},7,10,${v}\n`})});PHS.forEach(ph=>{sWL.forEach((wl,wi)=>{const v=D3[`${ph}_${wi}`];if(v!=null)c+=`P3,${wl},25,${ph},10,${v}\n`})});dl('mb_full_data.csv',c)}
 </script>
 </body>
 </html>
