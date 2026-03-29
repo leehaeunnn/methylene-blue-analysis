@@ -1,1313 +1,1164 @@
 <!DOCTYPE html>
 <html lang="ko">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>메틸렌 블루 흡광도 분석</title>
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    <style>
-        :root {
-            --primary: #1a73e8;
-            --primary-light: #e8f0fe;
-            --accent: #0d47a1;
-            --bg: #f5f7fa;
-            --card: #ffffff;
-            --text: #202124;
-            --text-secondary: #5f6368;
-            --border: #dadce0;
-            --success: #0f9d58;
-            --warning: #f4b400;
-            --error: #db4437;
-            --mb-color: #0066cc;
-        }
-
-        * { margin: 0; padding: 0; box-sizing: border-box; }
-
-        body {
-            font-family: 'Segoe UI', -apple-system, BlinkMacSystemFont, sans-serif;
-            background: var(--bg);
-            color: var(--text);
-            line-height: 1.6;
-        }
-
-        .header {
-            background: linear-gradient(135deg, #0d47a1 0%, #1565c0 50%, #1a73e8 100%);
-            color: white;
-            padding: 2rem 1.5rem;
-            text-align: center;
-            position: relative;
-            overflow: hidden;
-        }
-
-        .header::before {
-            content: '';
-            position: absolute;
-            top: -50%;
-            left: -50%;
-            width: 200%;
-            height: 200%;
-            background: radial-gradient(ellipse at center, rgba(255,255,255,0.1) 0%, transparent 70%);
-            animation: pulse 4s ease-in-out infinite;
-        }
-
-        @keyframes pulse {
-            0%, 100% { transform: scale(1); opacity: 0.5; }
-            50% { transform: scale(1.1); opacity: 0.8; }
-        }
-
-        .header h1 {
-            font-size: 1.8rem;
-            font-weight: 700;
-            position: relative;
-            z-index: 1;
-        }
-
-        .header .subtitle {
-            font-size: 0.95rem;
-            opacity: 0.9;
-            margin-top: 0.5rem;
-            position: relative;
-            z-index: 1;
-        }
-
-        .header .info-bar {
-            display: flex;
-            justify-content: center;
-            gap: 1.5rem;
-            flex-wrap: wrap;
-            margin-top: 1rem;
-            font-size: 0.85rem;
-            opacity: 0.85;
-            position: relative;
-            z-index: 1;
-        }
-
-        .container {
-            max-width: 1200px;
-            margin: 0 auto;
-            padding: 1.5rem;
-        }
-
-        .card {
-            background: var(--card);
-            border-radius: 12px;
-            padding: 1.5rem;
-            margin-bottom: 1.5rem;
-            box-shadow: 0 1px 3px rgba(0,0,0,0.08), 0 1px 2px rgba(0,0,0,0.06);
-            border: 1px solid var(--border);
-        }
-
-        .card h2 {
-            font-size: 1.2rem;
-            color: var(--accent);
-            margin-bottom: 1rem;
-            padding-bottom: 0.5rem;
-            border-bottom: 2px solid var(--primary-light);
-            display: flex;
-            align-items: center;
-            gap: 0.5rem;
-        }
-
-        .card h2 .icon {
-            font-size: 1.4rem;
-        }
-
-        /* 96-well plate visualization */
-        .plate-visual {
-            display: flex;
-            gap: 6px;
-            justify-content: center;
-            padding: 1rem;
-            background: #f8f9fa;
-            border-radius: 8px;
-            margin-bottom: 1rem;
-            overflow-x: auto;
-        }
-
-        .well {
-            width: 60px;
-            height: 60px;
-            border-radius: 50%;
-            border: 2px solid #ccc;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            font-size: 0.65rem;
-            font-weight: 600;
-            transition: all 0.3s ease;
-            cursor: pointer;
-            position: relative;
-            flex-shrink: 0;
-        }
-
-        .well:hover {
-            transform: scale(1.15);
-            box-shadow: 0 4px 12px rgba(0,0,0,0.2);
-            z-index: 10;
-        }
-
-        .well .well-label {
-            font-size: 0.7rem;
-            font-weight: 700;
-            color: white;
-            text-shadow: 0 1px 2px rgba(0,0,0,0.5);
-        }
-
-        .well .well-conc {
-            font-size: 0.55rem;
-            color: rgba(255,255,255,0.9);
-            text-shadow: 0 1px 2px rgba(0,0,0,0.5);
-        }
-
-        /* Data table */
-        .data-table {
-            width: 100%;
-            border-collapse: collapse;
-            font-size: 0.85rem;
-        }
-
-        .data-table th {
-            background: var(--primary);
-            color: white;
-            padding: 0.6rem 0.5rem;
-            text-align: center;
-            font-weight: 600;
-            font-size: 0.78rem;
-            white-space: nowrap;
-        }
-
-        .data-table th:first-child {
-            border-radius: 8px 0 0 0;
-        }
-
-        .data-table th:last-child {
-            border-radius: 0 8px 0 0;
-        }
-
-        .data-table td {
-            padding: 0.5rem;
-            text-align: center;
-            border-bottom: 1px solid var(--border);
-        }
-
-        .data-table tr:nth-child(even) {
-            background: #f8f9fa;
-        }
-
-        .data-table tr:hover {
-            background: var(--primary-light);
-        }
-
-        .data-table input {
-            width: 80px;
-            padding: 0.3rem;
-            border: 1.5px solid var(--border);
-            border-radius: 6px;
-            text-align: center;
-            font-size: 0.85rem;
-            transition: border-color 0.2s;
-        }
-
-        .data-table input:focus {
-            outline: none;
-            border-color: var(--primary);
-            box-shadow: 0 0 0 3px rgba(26,115,232,0.15);
-        }
-
-        .data-table .blank-row {
-            background: #fff3e0 !important;
-        }
-
-        /* Charts grid */
-        .charts-grid {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 1.5rem;
-        }
-
-        @media (max-width: 900px) {
-            .charts-grid { grid-template-columns: 1fr; }
-        }
-
-        .chart-container {
-            background: var(--card);
-            border-radius: 12px;
-            padding: 1.5rem;
-            box-shadow: 0 1px 3px rgba(0,0,0,0.08);
-            border: 1px solid var(--border);
-        }
-
-        .chart-container h3 {
-            font-size: 1rem;
-            color: var(--accent);
-            margin-bottom: 1rem;
-            text-align: center;
-        }
-
-        .chart-wrapper {
-            position: relative;
-            height: 320px;
-        }
-
-        /* Stats cards */
-        .stats-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-            gap: 1rem;
-            margin-bottom: 1rem;
-        }
-
-        .stat-card {
-            background: linear-gradient(135deg, var(--primary-light) 0%, #fff 100%);
-            border-radius: 10px;
-            padding: 1rem;
-            text-align: center;
-            border: 1px solid var(--border);
-        }
-
-        .stat-card .stat-value {
-            font-size: 1.6rem;
-            font-weight: 700;
-            color: var(--accent);
-        }
-
-        .stat-card .stat-label {
-            font-size: 0.78rem;
-            color: var(--text-secondary);
-            margin-top: 0.25rem;
-        }
-
-        .stat-card.good .stat-value { color: var(--success); }
-        .stat-card.warning .stat-value { color: var(--warning); }
-        .stat-card.bad .stat-value { color: var(--error); }
-
-        /* Buttons */
-        .btn {
-            padding: 0.6rem 1.5rem;
-            border: none;
-            border-radius: 8px;
-            font-size: 0.9rem;
-            font-weight: 600;
-            cursor: pointer;
-            transition: all 0.2s;
-            display: inline-flex;
-            align-items: center;
-            gap: 0.4rem;
-        }
-
-        .btn-primary {
-            background: var(--primary);
-            color: white;
-        }
-
-        .btn-primary:hover {
-            background: var(--accent);
-            transform: translateY(-1px);
-            box-shadow: 0 4px 12px rgba(26,115,232,0.3);
-        }
-
-        .btn-secondary {
-            background: white;
-            color: var(--primary);
-            border: 2px solid var(--primary);
-        }
-
-        .btn-secondary:hover {
-            background: var(--primary-light);
-        }
-
-        .btn-group {
-            display: flex;
-            gap: 0.75rem;
-            flex-wrap: wrap;
-            margin-top: 1rem;
-        }
-
-        /* Analysis section */
-        .analysis-box {
-            background: #f0f7ff;
-            border-left: 4px solid var(--primary);
-            padding: 1rem 1.2rem;
-            border-radius: 0 8px 8px 0;
-            margin-top: 1rem;
-            font-size: 0.9rem;
-            line-height: 1.7;
-        }
-
-        .analysis-box h4 {
-            color: var(--accent);
-            margin-bottom: 0.5rem;
-        }
-
-        .analysis-box ul {
-            padding-left: 1.2rem;
-        }
-
-        .analysis-box li {
-            margin-bottom: 0.3rem;
-        }
-
-        .badge {
-            display: inline-block;
-            padding: 0.15rem 0.5rem;
-            border-radius: 12px;
-            font-size: 0.75rem;
-            font-weight: 600;
-        }
-
-        .badge-good { background: #e6f4ea; color: var(--success); }
-        .badge-warning { background: #fef7e0; color: #e37400; }
-        .badge-bad { background: #fce8e6; color: var(--error); }
-
-        /* Beer-Lambert formula display */
-        .formula-display {
-            text-align: center;
-            padding: 1.2rem;
-            background: linear-gradient(135deg, #f0f7ff, #e8f0fe);
-            border-radius: 10px;
-            margin: 1rem 0;
-            font-size: 1.3rem;
-            font-weight: 600;
-            color: var(--accent);
-            font-family: 'Times New Roman', serif;
-            letter-spacing: 1px;
-        }
-
-        .formula-display .formula-desc {
-            font-size: 0.8rem;
-            font-family: 'Segoe UI', sans-serif;
-            color: var(--text-secondary);
-            margin-top: 0.5rem;
-            font-weight: 400;
-        }
-
-        /* Error analysis */
-        .error-bar {
-            height: 8px;
-            background: #e0e0e0;
-            border-radius: 4px;
-            overflow: hidden;
-            margin: 0.3rem 0;
-        }
-
-        .error-bar-fill {
-            height: 100%;
-            border-radius: 4px;
-            transition: width 0.5s ease;
-        }
-
-        .error-table td:first-child {
-            text-align: left;
-            font-weight: 600;
-        }
-
-        /* Discussion section */
-        .discussion-area {
-            width: 100%;
-            min-height: 100px;
-            padding: 0.75rem;
-            border: 1.5px solid var(--border);
-            border-radius: 8px;
-            font-size: 0.9rem;
-            font-family: inherit;
-            resize: vertical;
-            transition: border-color 0.2s;
-        }
-
-        .discussion-area:focus {
-            outline: none;
-            border-color: var(--primary);
-            box-shadow: 0 0 0 3px rgba(26,115,232,0.15);
-        }
-
-        .discussion-member {
-            margin-bottom: 1rem;
-        }
-
-        .discussion-member label {
-            display: block;
-            font-weight: 600;
-            margin-bottom: 0.3rem;
-            color: var(--accent);
-        }
-
-        .footer {
-            text-align: center;
-            padding: 1.5rem;
-            color: var(--text-secondary);
-            font-size: 0.8rem;
-        }
-
-        /* Tooltip */
-        .tooltip {
-            position: relative;
-        }
-
-        .tooltip::after {
-            content: attr(data-tip);
-            position: absolute;
-            bottom: 100%;
-            left: 50%;
-            transform: translateX(-50%);
-            background: #333;
-            color: white;
-            padding: 0.3rem 0.6rem;
-            border-radius: 4px;
-            font-size: 0.7rem;
-            white-space: nowrap;
-            opacity: 0;
-            pointer-events: none;
-            transition: opacity 0.2s;
-        }
-
-        .tooltip:hover::after {
-            opacity: 1;
-        }
-
-        /* Print styles */
-        @media print {
-            .header { padding: 1rem; }
-            .btn-group { display: none; }
-            .card { break-inside: avoid; }
-        }
-
-        .tab-group {
-            display: flex;
-            gap: 0;
-            margin-bottom: 1rem;
-            border-bottom: 2px solid var(--border);
-        }
-
-        .tab {
-            padding: 0.6rem 1.2rem;
-            cursor: pointer;
-            font-weight: 600;
-            font-size: 0.9rem;
-            color: var(--text-secondary);
-            border-bottom: 2px solid transparent;
-            margin-bottom: -2px;
-            transition: all 0.2s;
-        }
-
-        .tab:hover {
-            color: var(--primary);
-        }
-
-        .tab.active {
-            color: var(--primary);
-            border-bottom-color: var(--primary);
-        }
-
-        .tab-content {
-            display: none;
-        }
-
-        .tab-content.active {
-            display: block;
-        }
-
-        .conc-unit-toggle {
-            display: flex;
-            align-items: center;
-            gap: 0.5rem;
-            font-size: 0.85rem;
-            margin-bottom: 0.5rem;
-        }
-
-        .conc-unit-toggle select {
-            padding: 0.3rem 0.5rem;
-            border: 1.5px solid var(--border);
-            border-radius: 6px;
-            font-size: 0.85rem;
-        }
-    </style>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>MB Spectral Analysis & AI4SE Optimizer</title>
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-annotation@2.2.1/dist/chartjs-plugin-annotation.min.js"></script>
+<style>
+:root{--p:#1565c0;--pl:#e3f2fd;--pa:#0d47a1;--bg:#f4f6f9;--card:#fff;--tx:#1a1a2e;--ts:#5f6368;--bd:#dfe1e5;--ok:#0f9d58;--wn:#f9a825;--er:#d32f2f;--r:10px}
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:'Segoe UI',system-ui,sans-serif;background:var(--bg);color:var(--tx);line-height:1.6;font-size:14px}
+.hdr{background:linear-gradient(135deg,#0a1628 0%,#0d47a1 40%,#1565c0 70%,#1e88e5 100%);color:#fff;padding:1.8rem 1.5rem;text-align:center;position:relative;overflow:hidden}
+.hdr::after{content:'';position:absolute;inset:0;background:url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23ffffff' fill-opacity='0.03'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E")}
+.hdr h1{font-size:1.6rem;font-weight:800;position:relative;z-index:1;letter-spacing:-0.5px}
+.hdr .sub{font-size:.88rem;opacity:.85;margin-top:.4rem;position:relative;z-index:1}
+.hdr .meta{display:flex;justify-content:center;gap:1.5rem;flex-wrap:wrap;margin-top:.8rem;font-size:.78rem;opacity:.7;position:relative;z-index:1}
+.ctr{max-width:1280px;margin:0 auto;padding:1rem}
+
+/* Navigation */
+.nav{display:flex;gap:0;background:var(--card);border-radius:var(--r);overflow-x:auto;margin-bottom:1rem;box-shadow:0 1px 3px rgba(0,0,0,.08);border:1px solid var(--bd)}
+.nav-btn{flex:1;min-width:120px;padding:.7rem .5rem;text-align:center;cursor:pointer;font-weight:600;font-size:.78rem;color:var(--ts);border:none;background:none;transition:all .2s;border-bottom:3px solid transparent;white-space:nowrap}
+.nav-btn:hover{background:var(--pl);color:var(--p)}
+.nav-btn.act{color:var(--p);border-bottom-color:var(--p);background:var(--pl)}
+.nav-btn .nav-icon{display:block;font-size:1.2rem;margin-bottom:2px}
+
+.page{display:none}
+.page.act{display:block}
+
+/* Cards */
+.cd{background:var(--card);border-radius:var(--r);padding:1.2rem;margin-bottom:1rem;box-shadow:0 1px 3px rgba(0,0,0,.06);border:1px solid var(--bd)}
+.cd h2{font-size:1.05rem;color:var(--pa);margin-bottom:.8rem;padding-bottom:.4rem;border-bottom:2px solid var(--pl);display:flex;align-items:center;gap:.4rem}
+.cd h3{font-size:.92rem;color:var(--p);margin:1rem 0 .5rem}
+
+/* Tables */
+table{width:100%;border-collapse:collapse;font-size:.82rem}
+th{background:var(--p);color:#fff;padding:.5rem .4rem;text-align:center;font-weight:600;font-size:.76rem;white-space:nowrap}
+th:first-child{border-radius:var(--r) 0 0 0}th:last-child{border-radius:0 var(--r) 0 0}
+td{padding:.45rem .4rem;text-align:center;border-bottom:1px solid var(--bd)}
+tr:nth-child(even){background:#f8f9fa}tr:hover{background:var(--pl)}
+input[type=number]{width:70px;padding:.25rem;border:1.5px solid var(--bd);border-radius:6px;text-align:center;font-size:.82rem}
+input[type=number]:focus{outline:none;border-color:var(--p);box-shadow:0 0 0 2px rgba(21,101,192,.15)}
+select{padding:.3rem .5rem;border:1.5px solid var(--bd);border-radius:6px;font-size:.82rem}
+
+/* Buttons */
+.btn{padding:.5rem 1.2rem;border:none;border-radius:8px;font-size:.85rem;font-weight:600;cursor:pointer;transition:all .2s;display:inline-flex;align-items:center;gap:.3rem}
+.btn-p{background:var(--p);color:#fff}.btn-p:hover{background:var(--pa);transform:translateY(-1px);box-shadow:0 3px 8px rgba(21,101,192,.3)}
+.btn-s{background:#fff;color:var(--p);border:1.5px solid var(--p)}.btn-s:hover{background:var(--pl)}
+.btn-ok{background:var(--ok);color:#fff}.btn-ok:hover{background:#0b8043}
+.btn-sm{padding:.35rem .8rem;font-size:.78rem}
+.btns{display:flex;gap:.5rem;flex-wrap:wrap;margin-top:.8rem}
+
+/* Grids */
+.g2{display:grid;grid-template-columns:1fr 1fr;gap:1rem}
+.g3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:1rem}
+.g4{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:.8rem}
+@media(max-width:900px){.g2,.g3{grid-template-columns:1fr}}
+
+/* Chart */
+.ch{position:relative;height:300px}
+
+/* Stats */
+.st{background:linear-gradient(135deg,var(--pl),#fff);border-radius:var(--r);padding:.8rem;text-align:center;border:1px solid var(--bd)}
+.st .v{font-size:1.4rem;font-weight:700;color:var(--pa)}
+.st .l{font-size:.72rem;color:var(--ts);margin-top:.15rem}
+.st.good .v{color:var(--ok)}.st.warn .v{color:var(--wn)}.st.bad .v{color:var(--er)}
+
+/* Analysis box */
+.ab{background:#f0f7ff;border-left:4px solid var(--p);padding:.8rem 1rem;border-radius:0 8px 8px 0;margin:.6rem 0;font-size:.85rem;line-height:1.7}
+.ab h4{color:var(--pa);margin-bottom:.3rem;font-size:.9rem}
+.ab ul{padding-left:1.1rem}.ab li{margin-bottom:.2rem}
+.ab.ok{border-left-color:var(--ok);background:#f0faf4}
+.ab.wn{border-left-color:var(--wn);background:#fffbf0}
+.ab.er{border-left-color:var(--er);background:#fef0f0}
+
+/* Badge */
+.bg{display:inline-block;padding:.1rem .45rem;border-radius:10px;font-size:.72rem;font-weight:600}
+.bg-ok{background:#e6f4ea;color:var(--ok)}.bg-wn{background:#fef7e0;color:#e37400}.bg-er{background:#fce8e6;color:var(--er)}
+
+/* Formula */
+.fm{text-align:center;padding:1rem;background:linear-gradient(135deg,#f0f7ff,var(--pl));border-radius:var(--r);font-size:1.2rem;font-weight:700;color:var(--pa);font-family:'Times New Roman',serif}
+.fm small{display:block;font-size:.75rem;font-family:'Segoe UI',sans-serif;color:var(--ts);font-weight:400;margin-top:.3rem}
+
+/* Well plate */
+.plate{display:flex;gap:5px;justify-content:center;padding:.8rem;background:#f8f9fa;border-radius:8px;overflow-x:auto;flex-wrap:nowrap}
+.well{width:52px;height:52px;border-radius:50%;border:2px solid #ccc;display:flex;flex-direction:column;align-items:center;justify-content:center;font-size:.6rem;font-weight:600;transition:all .2s;cursor:pointer;flex-shrink:0}
+.well:hover{transform:scale(1.12);box-shadow:0 3px 10px rgba(0,0,0,.2);z-index:5}
+
+/* Heatmap */
+.hm{display:grid;gap:2px;margin:.5rem 0}
+.hm-cell{padding:.4rem .2rem;text-align:center;font-size:.72rem;font-weight:600;border-radius:4px;color:#fff;text-shadow:0 1px 1px rgba(0,0,0,.3);min-height:36px;display:flex;align-items:center;justify-content:center}
+
+/* Tabs within page */
+.tabs{display:flex;gap:0;border-bottom:2px solid var(--bd);margin-bottom:.8rem}
+.tab{padding:.5rem 1rem;cursor:pointer;font-weight:600;font-size:.82rem;color:var(--ts);border-bottom:2px solid transparent;margin-bottom:-2px;transition:all .2s}
+.tab:hover{color:var(--p)}.tab.act{color:var(--p);border-bottom-color:var(--p)}
+.tc{display:none}.tc.act{display:block}
+
+/* Progress indicator */
+.prog{display:flex;gap:0;margin:1rem 0}
+.prog-step{flex:1;text-align:center;padding:.5rem;font-size:.75rem;font-weight:600;position:relative;color:var(--ts)}
+.prog-step::after{content:'';position:absolute;bottom:0;left:0;right:0;height:3px;background:var(--bd);border-radius:2px}
+.prog-step.done::after{background:var(--ok)}.prog-step.cur::after{background:var(--p)}
+.prog-step.done{color:var(--ok)}.prog-step.cur{color:var(--p)}
+
+/* Scrollbar */
+::-webkit-scrollbar{height:6px;width:6px}
+::-webkit-scrollbar-thumb{background:#bbb;border-radius:3px}
+
+/* Anomaly highlight */
+.anomaly{background:#fff3e0 !important;border-left:3px solid var(--wn)}
+
+/* Surface plot (pseudo 3D with CSS) */
+.surface-row{display:flex;gap:1px}
+.surface-cell{flex:1;aspect-ratio:1;display:flex;align-items:center;justify-content:center;font-size:.65rem;font-weight:600;border-radius:2px;transition:all .2s}
+.surface-cell:hover{transform:scale(1.3);z-index:5;box-shadow:0 2px 8px rgba(0,0,0,.3)}
+
+.footer{text-align:center;padding:1.2rem;color:var(--ts);font-size:.75rem}
+
+/* Print */
+@media print{.nav,.btns{display:none!important}.page{display:block!important}.cd{break-inside:avoid}}
+
+/* Loading animation */
+.spin{display:inline-block;width:16px;height:16px;border:2px solid var(--bd);border-top-color:var(--p);border-radius:50%;animation:spin .6s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+
+/* Bayesian viz */
+.bo-iter{display:flex;align-items:center;gap:.5rem;padding:.3rem .5rem;border-radius:6px;margin:.2rem 0;font-size:.78rem;transition:background .2s}
+.bo-iter:hover{background:var(--pl)}
+.bo-bar{height:6px;background:var(--bd);border-radius:3px;flex:1;overflow:hidden}
+.bo-fill{height:100%;border-radius:3px;transition:width .3s}
+</style>
 </head>
 <body>
 
-<div class="header">
-    <h1>Methylene Blue Absorbance Analysis</h1>
-    <div class="subtitle">마이크로피펫 사용 및 메틸렌 블루 흡광도 측정 분석 프로그램</div>
-    <div class="info-bar">
-        <span>조장: 2116 정수현</span>
-        <span>조원: 2101 김서율, 2107 박세인, 2113 이하은</span>
-        <span>2026/03/26</span>
-        <span>21.4°C / 37% / 1019.5hPa</span>
-    </div>
+<div class="hdr">
+<h1>MB Spectral Analysis & AI4SE Optimizer</h1>
+<div class="sub">환경 조건별 메틸렌블루 흡광 스펙트럼 분석 · Bayesian Optimization 기반 최적 조건 탐색</div>
+<div class="meta">
+<span>전남과학고등학교</span>
+<span>조장: 2116 정수현 | 조원: 2101 김서율, 2107 박세인, 2113 이하은</span>
+<span>AI4SE × Spectroscopy</span>
+</div>
 </div>
 
-<div class="container">
+<div class="ctr">
 
-    <!-- 96-well plate visualization -->
-    <div class="card">
-        <h2><span class="icon">🧫</span> 96-Well Plate 시각화 (A1–A12)</h2>
-        <div class="plate-visual" id="plateVisual"></div>
-        <div style="text-align:center; font-size:0.8rem; color:var(--text-secondary);">
-            색상 진하기 = 농도 비례 | 웰에 마우스를 올리면 상세 정보 표시
-        </div>
-    </div>
+<!-- Navigation -->
+<div class="nav" id="nav">
+<button class="nav-btn act" onclick="go(0)"><span class="nav-icon">🧫</span>기본 측정</button>
+<button class="nav-btn" onclick="go(1)"><span class="nav-icon">🌈</span>Phase 1: 파장</button>
+<button class="nav-btn" onclick="go(2)"><span class="nav-icon">🌡️</span>Phase 2: 온도</button>
+<button class="nav-btn" onclick="go(3)"><span class="nav-icon">⚗️</span>Phase 3: pH</button>
+<button class="nav-btn" onclick="go(4)"><span class="nav-icon">🤖</span>Phase 4: AI4SE</button>
+<button class="nav-btn" onclick="go(5)"><span class="nav-icon">📊</span>종합 보고서</button>
+</div>
 
-    <!-- Beer-Lambert Law -->
-    <div class="card">
-        <h2><span class="icon">📐</span> Beer-Lambert 법칙</h2>
-        <div class="formula-display">
-            A = ε · l · c
-            <div class="formula-desc">
-                A: 흡광도 (무단위) &nbsp;|&nbsp; ε: 몰 흡광 계수 (M⁻¹cm⁻¹) &nbsp;|&nbsp; l: 광로 길이 (cm) &nbsp;|&nbsp; c: 농도 (mol/L)
-            </div>
-        </div>
-        <div style="display:flex; gap:1rem; flex-wrap:wrap; margin-top:0.75rem;">
-            <div style="flex:1; min-width:200px;">
-                <label style="font-size:0.85rem; font-weight:600;">ε (몰 흡광 계수, 664nm)</label>
-                <input type="number" id="epsilon" value="76000" style="width:100%; padding:0.4rem; border:1.5px solid var(--border); border-radius:6px; margin-top:0.3rem;" />
-                <div style="font-size:0.75rem; color:var(--text-secondary); margin-top:0.2rem;">메틸렌 블루 ε ≈ 76,000 M⁻¹cm⁻¹ (664nm 기준, 문헌값)</div>
-            </div>
-            <div style="flex:1; min-width:200px;">
-                <label style="font-size:0.85rem; font-weight:600;">l (광로 길이, cm)</label>
-                <input type="number" id="pathLength" value="0.3" step="0.01" style="width:100%; padding:0.4rem; border:1.5px solid var(--border); border-radius:6px; margin-top:0.3rem;" />
-                <div style="font-size:0.75rem; color:var(--text-secondary); margin-top:0.2rem;">96-well plate (100μL 기준) ≈ 0.28~0.31 cm</div>
-            </div>
-        </div>
-    </div>
+<!-- ==================== PAGE 0: Basic Measurement ==================== -->
+<div class="page act" id="p0">
+<div class="cd">
+<h2>96-Well Plate 시각화 (A1–A12, 664nm 기준)</h2>
+<div class="plate" id="plateVis"></div>
+<div style="text-align:center;font-size:.75rem;color:var(--ts);margin-top:.3rem">색상 진하기 = 농도 비례 | 마우스 오버 시 상세 정보</div>
+</div>
 
-    <!-- Data Input Table -->
-    <div class="card">
-        <h2><span class="icon">📊</span> 실험 데이터 입력 및 이론값 비교</h2>
+<div class="cd">
+<h2>Beer-Lambert 법칙</h2>
+<div class="fm">A = ε · l · c<small>A: 흡광도 | ε: 몰 흡광 계수 (M⁻¹cm⁻¹) | l: 광로 길이 (cm) | c: 농도 (mol/L)</small></div>
+<div class="g2" style="margin-top:.8rem">
+<div><label style="font-size:.82rem;font-weight:600">ε (몰 흡광 계수, 664nm)</label>
+<input type="number" id="eps0" value="76000" style="width:100%;margin-top:.2rem" onchange="calcP0()">
+<div style="font-size:.72rem;color:var(--ts)">문헌값 ≈ 76,000 M⁻¹cm⁻¹</div></div>
+<div><label style="font-size:.82rem;font-weight:600">l (광로 길이, cm)</label>
+<input type="number" id="pl0" value="0.3" step="0.01" style="width:100%;margin-top:.2rem" onchange="calcP0()">
+<div style="font-size:.72rem;color:var(--ts)">96-well (100μL) ≈ 0.28~0.31 cm</div></div>
+</div>
+</div>
 
-        <div class="conc-unit-toggle">
-            <label>농도 단위:</label>
-            <select id="concUnit" onchange="updateAll()">
-                <option value="mg">mg/mL</option>
-                <option value="mol">mol/L (M)</option>
-            </select>
-        </div>
+<div class="cd">
+<h2>실험 데이터 (Serial Dilution, 664nm, 25°C, pH7)</h2>
+<div style="overflow-x:auto"><table>
+<thead><tr><th>웰</th><th>희석</th><th>배수</th><th>농도(mg/mL)</th><th>농도(μM)</th><th>이론 A</th><th>측정 A</th><th>보정 A</th><th>오차(%)</th></tr></thead>
+<tbody id="tb0"></tbody>
+</table></div>
+<div class="btns">
+<button class="btn btn-p" onclick="calcP0()">분석 실행</button>
+<button class="btn btn-s" onclick="sampleP0()">예시 데이터</button>
+<button class="btn btn-s" onclick="clearP0()">초기화</button>
+<button class="btn btn-s" onclick="csvP0()">CSV 내보내기</button>
+</div>
+</div>
 
-        <div style="overflow-x:auto;">
-            <table class="data-table" id="dataTable">
-                <thead>
-                    <tr>
-                        <th>웰</th>
-                        <th>희석 단계</th>
-                        <th>희석 배수</th>
-                        <th>농도</th>
-                        <th>이론 흡광도</th>
-                        <th>측정 흡광도 (입력)</th>
-                        <th>보정 흡광도</th>
-                        <th>오차 (%)</th>
-                    </tr>
-                </thead>
-                <tbody id="dataBody"></tbody>
-            </table>
-        </div>
+<div id="p0stats" style="display:none">
+<div class="g4" id="p0sg"></div>
+<div class="g2" style="margin-top:1rem">
+<div class="cd"><h3 style="text-align:center">농도 vs 흡광도</h3><div class="ch"><canvas id="c0lin"></canvas></div></div>
+<div class="cd"><h3 style="text-align:center">이론 vs 측정 비교</h3><div class="ch"><canvas id="c0bar"></canvas></div></div>
+</div>
+</div>
+</div>
 
-        <div class="btn-group">
-            <button class="btn btn-primary" onclick="updateAll()">분석 실행</button>
-            <button class="btn btn-secondary" onclick="loadSampleData()">예시 데이터 로드</button>
-            <button class="btn btn-secondary" onclick="clearData()">초기화</button>
-            <button class="btn btn-secondary" onclick="exportCSV()">CSV 내보내기</button>
-        </div>
-    </div>
+<!-- ==================== PAGE 1: Phase 1 — Wavelength ==================== -->
+<div class="page" id="p1">
+<div class="cd">
+<h2>Phase 1 — 최적 파장 탐색 (25°C, pH 7 고정)</h2>
+<p style="font-size:.85rem;color:var(--ts);margin-bottom:.8rem">
+MB 표준용액 농도: 0, 2, 5, 10, 20, 50 μM × 파장 5수준 (550, 600, 630, 664, 700 nm)
+</p>
+<div class="btns" style="margin-top:0;margin-bottom:.8rem">
+<button class="btn btn-p btn-sm" onclick="calcP1()">분석</button>
+<button class="btn btn-s btn-sm" onclick="sampleP1()">예시 데이터</button>
+<button class="btn btn-s btn-sm" onclick="clearP1()">초기화</button>
+</div>
+<div style="overflow-x:auto"><table>
+<thead><tr><th>농도(μM)</th><th>550nm</th><th>600nm</th><th>630nm</th><th>664nm</th><th>700nm</th></tr></thead>
+<tbody id="tb1"></tbody>
+</table></div>
+</div>
 
-    <!-- Statistics summary -->
-    <div class="card" id="statsCard" style="display:none;">
-        <h2><span class="icon">📈</span> 분석 결과 요약</h2>
-        <div class="stats-grid" id="statsGrid"></div>
-    </div>
+<div id="p1res" style="display:none">
+<div class="g4" id="p1sg"></div>
+<div class="g2" style="margin-top:1rem">
+<div class="cd"><h3 style="text-align:center">파장별 검량선 (Beer-Lambert)</h3><div class="ch"><canvas id="c1cal"></canvas></div></div>
+<div class="cd"><h3 style="text-align:center">파장별 R² 및 기울기(감도) 비교</h3><div class="ch"><canvas id="c1sens"></canvas></div></div>
+</div>
+<div class="cd" id="p1anova"></div>
+</div>
+</div>
 
-    <!-- Charts -->
-    <div class="charts-grid" id="chartsSection" style="display:none;">
-        <div class="chart-container">
-            <h3>농도 vs 흡광도 (선형)</h3>
-            <div class="chart-wrapper">
-                <canvas id="linearChart"></canvas>
-            </div>
-        </div>
-        <div class="chart-container">
-            <h3>농도 vs 흡광도 (로그 스케일)</h3>
-            <div class="chart-wrapper">
-                <canvas id="logChart"></canvas>
-            </div>
-        </div>
-        <div class="chart-container">
-            <h3>이론값 vs 측정값 비교</h3>
-            <div class="chart-wrapper">
-                <canvas id="comparisonChart"></canvas>
-            </div>
-        </div>
-        <div class="chart-container">
-            <h3>오차율 분석 (웰별)</h3>
-            <div class="chart-wrapper">
-                <canvas id="errorChart"></canvas>
-            </div>
-        </div>
-    </div>
+<!-- ==================== PAGE 2: Phase 2 — Temperature ==================== -->
+<div class="page" id="p2">
+<div class="cd">
+<h2>Phase 2 — 온도 안정성 분석</h2>
+<p style="font-size:.85rem;color:var(--ts);margin-bottom:.5rem">
+MB 10μM, 항온 30분 처리 후 측정 | 온도: 4, 25, 40, 60°C × 파장: 3수준
+</p>
+<div id="p2wl" style="margin-bottom:.5rem"></div>
+<div class="btns" style="margin-top:0;margin-bottom:.8rem">
+<button class="btn btn-p btn-sm" onclick="calcP2()">분석</button>
+<button class="btn btn-s btn-sm" onclick="sampleP2()">예시 데이터</button>
+<button class="btn btn-s btn-sm" onclick="clearP2()">초기화</button>
+</div>
+<div style="overflow-x:auto"><table>
+<thead><tr><th>온도(°C)</th><th id="p2h1">λ₁</th><th id="p2h2">λ₂</th><th id="p2h3">λ₃</th></tr></thead>
+<tbody id="tb2"></tbody>
+</table></div>
+</div>
+<div id="p2res" style="display:none">
+<div class="g2">
+<div class="cd"><h3 style="text-align:center">온도별 흡광도 변화</h3><div class="ch"><canvas id="c2line"></canvas></div></div>
+<div class="cd"><h3 style="text-align:center">변화율 히트맵 (% vs 25°C)</h3><div id="p2hm"></div></div>
+</div>
+<div class="cd" id="p2anova"></div>
+</div>
+</div>
 
-    <!-- Detailed Analysis -->
-    <div class="card" id="analysisCard" style="display:none;">
-        <h2><span class="icon">🔬</span> 상세 분석</h2>
+<!-- ==================== PAGE 3: Phase 3 — pH ==================== -->
+<div class="page" id="p3">
+<div class="cd">
+<h2>Phase 3 — pH 안정성 분석</h2>
+<p style="font-size:.85rem;color:var(--ts);margin-bottom:.5rem">
+MB 10μM | pH: 3, 5, 7, 9, 11 × 파장: 3수준
+</p>
+<div class="btns" style="margin-top:0;margin-bottom:.8rem">
+<button class="btn btn-p btn-sm" onclick="calcP3()">분석</button>
+<button class="btn btn-s btn-sm" onclick="sampleP3()">예시 데이터</button>
+<button class="btn btn-s btn-sm" onclick="clearP3()">초기화</button>
+</div>
+<div style="overflow-x:auto"><table>
+<thead><tr><th>pH</th><th id="p3h1">λ₁</th><th id="p3h2">λ₂</th><th id="p3h3">λ₃</th></tr></thead>
+<tbody id="tb3"></tbody>
+</table></div>
+</div>
+<div id="p3res" style="display:none">
+<div class="g2">
+<div class="cd"><h3 style="text-align:center">pH별 흡광도 변화</h3><div class="ch"><canvas id="c3line"></canvas></div></div>
+<div class="cd"><h3 style="text-align:center">pH 변화율 히트맵</h3><div id="p3hm"></div></div>
+</div>
+<div class="cd" id="p3anomaly"></div>
+<div class="cd" id="p3anova"></div>
+</div>
+</div>
 
-        <div class="tab-group">
-            <div class="tab active" onclick="switchTab('linearity')">선형성 분석</div>
-            <div class="tab" onclick="switchTab('accuracy')">정확도 분석</div>
-            <div class="tab" onclick="switchTab('precision')">정밀도 평가</div>
-            <div class="tab" onclick="switchTab('beerlambert')">Beer-Lambert 검증</div>
-        </div>
+<!-- ==================== PAGE 4: Phase 4 — AI4SE ==================== -->
+<div class="page" id="p4">
+<div class="cd">
+<h2>Phase 4 — AI4SE 기반 최적 조건 자동 탐색</h2>
+<div class="prog" id="ai-prog">
+<div class="prog-step">데이터셋 구성</div>
+<div class="prog-step">회귀 모델 학습</div>
+<div class="prog-step">Bayesian Optimization</div>
+<div class="prog-step">Anomaly Detection</div>
+</div>
+<div class="btns" style="margin-top:.5rem">
+<button class="btn btn-p" onclick="runAI()">AI4SE 전체 파이프라인 실행</button>
+<button class="btn btn-s" onclick="loadAllSample()">모든 Phase 예시 데이터 로드</button>
+</div>
+</div>
 
-        <div class="tab-content active" id="tab-linearity"></div>
-        <div class="tab-content" id="tab-accuracy"></div>
-        <div class="tab-content" id="tab-precision"></div>
-        <div class="tab-content" id="tab-beerlambert"></div>
-    </div>
+<div id="p4res" style="display:none">
+<!-- Cross-domain analogy -->
+<div class="cd">
+<h2>구조적 동형성 (Cross-Domain Analogy)</h2>
+<div style="overflow-x:auto"><table>
+<thead><tr><th>생물 실험</th><th></th><th>SW Engineering</th><th>AI 기법</th></tr></thead>
+<tbody>
+<tr><td>실험 조건 (λ, T, pH)</td><td>≡</td><td>Configuration Space</td><td>Feature 정의</td></tr>
+<tr><td>흡광도 (A)</td><td>≡</td><td>시스템 성능 (Throughput)</td><td>Ridge / Lasso 회귀</td></tr>
+<tr><td>최적 조건 탐색</td><td>≡</td><td>Hyperparameter Tuning</td><td>Bayesian Optimization</td></tr>
+<tr><td>leuco-MB 전환</td><td>≡</td><td>성능 저하 이벤트</td><td>Anomaly Detection</td></tr>
+<tr><td>환경 안정성 테스트</td><td>≡</td><td>Robustness Testing</td><td>변화율 통계 분석</td></tr>
+</tbody>
+</table></div>
+</div>
 
-    <!-- Discussion -->
-    <div class="card">
-        <h2><span class="icon">💬</span> 고찰 (Discussion)</h2>
-        <div class="discussion-member">
-            <label>2101 김서율</label>
-            <textarea class="discussion-area" id="disc_kim" placeholder="실험 결과에 대한 고찰을 작성하세요..."></textarea>
-        </div>
-        <div class="discussion-member">
-            <label>2107 박세인</label>
-            <textarea class="discussion-area" id="disc_park" placeholder="실험 결과에 대한 고찰을 작성하세요..."></textarea>
-        </div>
-        <div class="discussion-member">
-            <label>2113 이하은</label>
-            <textarea class="discussion-area" id="disc_lee" placeholder="실험 결과에 대한 고찰을 작성하세요..."></textarea>
-        </div>
-        <div class="discussion-member">
-            <label>2116 정수현</label>
-            <textarea class="discussion-area" id="disc_jung" placeholder="실험 결과에 대한 고찰을 작성하세요..."></textarea>
-        </div>
-    </div>
+<!-- Ridge/Lasso -->
+<div class="cd">
+<h2>Ridge / Lasso 회귀 모델</h2>
+<div class="g2">
+<div><h3 style="text-align:center">예측 vs 실측</h3><div class="ch"><canvas id="c4pred"></canvas></div></div>
+<div><h3 style="text-align:center">Feature Importance (|계수|)</h3><div class="ch"><canvas id="c4feat"></canvas></div></div>
+</div>
+<div class="g4" id="p4ml" style="margin-top:.8rem"></div>
+</div>
+
+<!-- Bayesian Optimization -->
+<div class="cd">
+<h2>Bayesian Optimization 수렴 과정</h2>
+<div class="g2">
+<div><h3 style="text-align:center">탐색 수렴 곡선</h3><div class="ch"><canvas id="c4bo"></canvas></div></div>
+<div>
+<h3>탐색 이력</h3>
+<div id="p4bolist" style="max-height:280px;overflow-y:auto"></div>
+</div>
+</div>
+<div class="ab ok" id="p4boResult"></div>
+</div>
+
+<!-- 2D Surface -->
+<div class="cd">
+<h2>2D 예측면 (Predicted Surface)</h2>
+<div class="tabs">
+<div class="tab act" onclick="surfTab(0)">파장 × 온도</div>
+<div class="tab" onclick="surfTab(1)">파장 × pH</div>
+<div class="tab" onclick="surfTab(2)">온도 × pH</div>
+</div>
+<div class="tc act" id="surf0"><div class="ch"><canvas id="c4s0"></canvas></div></div>
+<div class="tc" id="surf1"><div class="ch"><canvas id="c4s1"></canvas></div></div>
+<div class="tc" id="surf2"><div class="ch"><canvas id="c4s2"></canvas></div></div>
+</div>
+
+<!-- Anomaly Detection -->
+<div class="cd">
+<h2>Anomaly Detection (IQR 기반)</h2>
+<div class="ch"><canvas id="c4anom"></canvas></div>
+<div class="ab wn" id="p4anomResult"></div>
+</div>
+</div>
+</div>
+
+<!-- ==================== PAGE 5: Report ==================== -->
+<div class="page" id="p5">
+<div class="cd">
+<h2>종합 보고서</h2>
+<div id="report"></div>
+</div>
+<div class="cd">
+<h2>고찰 (Discussion)</h2>
+<div style="margin-bottom:.8rem"><label style="font-weight:600;color:var(--pa)">2101 김서율</label><textarea class="discussion-area" id="d1" style="width:100%;min-height:80px;margin-top:.2rem;padding:.5rem;border:1.5px solid var(--bd);border-radius:8px;font-family:inherit;font-size:.85rem;resize:vertical" placeholder="고찰 작성..."></textarea></div>
+<div style="margin-bottom:.8rem"><label style="font-weight:600;color:var(--pa)">2107 박세인</label><textarea class="discussion-area" id="d2" style="width:100%;min-height:80px;margin-top:.2rem;padding:.5rem;border:1.5px solid var(--bd);border-radius:8px;font-family:inherit;font-size:.85rem;resize:vertical" placeholder="고찰 작성..."></textarea></div>
+<div style="margin-bottom:.8rem"><label style="font-weight:600;color:var(--pa)">2113 이하은</label><textarea class="discussion-area" id="d3" style="width:100%;min-height:80px;margin-top:.2rem;padding:.5rem;border:1.5px solid var(--bd);border-radius:8px;font-family:inherit;font-size:.85rem;resize:vertical" placeholder="고찰 작성..."></textarea></div>
+<div style="margin-bottom:.8rem"><label style="font-weight:600;color:var(--pa)">2116 정수현</label><textarea class="discussion-area" id="d4" style="width:100%;min-height:80px;margin-top:.2rem;padding:.5rem;border:1.5px solid var(--bd);border-radius:8px;font-family:inherit;font-size:.85rem;resize:vertical" placeholder="고찰 작성..."></textarea></div>
+</div>
+</div>
 
 </div>
 
-<div class="footer">
-    Methylene Blue Absorbance Analyzer &copy; 2026 | 전남과학고등학교 생명과학 실험
-</div>
+<div class="footer">MB Spectral Analysis & AI4SE Optimizer &copy; 2026 | 전남과학고등학교 생명 심화탐구</div>
 
 <script>
-// ============ CONSTANTS ============
-const MW_MB = 319.85; // g/mol (methylene blue molecular weight)
-const STOCK_CONC_MG = 1.0; // mg/mL
-const STOCK_CONC_MOL = (STOCK_CONC_MG / 1000) / (MW_MB / 1000); // mol/L = 3.126e-3 M
+// ====================== GLOBAL STATE ======================
+const MW=319.85, STOCK=1.0;
+const WLS=[550,600,630,664,700], TEMPS=[4,25,40,60], PHS=[3,5,7,9,11];
+const P0_CONCS_MG=[1,.5,.25,.125,.0625,.03125,.015625,.0078125,.00390625,.001953125,.0009765625,0];
+const P0_FACTORS=[1,2,4,8,16,32,64,128,256,512,1024,Infinity];
+const P0_LABELS=['원액','1차','2차','3차','4차','5차','6차','7차','8차','9차','10차','대조군'];
+const P1_CONCS=[0,2,5,10,20,50]; // μM
+const WELLS=['A1','A2','A3','A4','A5','A6','A7','A8','A9','A10','A11','A12'];
 
-const WELLS = ['A1','A2','A3','A4','A5','A6','A7','A8','A9','A10','A11','A12'];
-const DILUTION_LABELS = ['원액','1차 희석','2차 희석','3차 희석','4차 희석','5차 희석',
-                         '6차 희석','7차 희석','8차 희석','9차 희석','10차 희석','대조군'];
-const DILUTION_FACTORS = [1,2,4,8,16,32,64,128,256,512,1024,Infinity];
+// Molar absorptivity at each wavelength (literature approx)
+const EPS_WL={550:18000,600:42000,630:58000,664:76000,700:12000};
 
-let charts = {};
-let measuredData = new Array(12).fill(null);
+let charts={};
+let D0=Array(12).fill(null); // page0 measured
+let D1={}; // page1: D1[wl][concIdx]
+let D2={}; // page2: D2[temp][wlIdx]
+let D3={}; // page3: D3[pH][wlIdx]
+let p1_selWL=[630,664,700]; // Phase 1 result: top 3 wavelengths for Phase 2,3
 
-// ============ INITIALIZATION ============
-function init() {
-    buildPlate();
-    buildTable();
-    updateAll();
+// ====================== NAVIGATION ======================
+function go(n){
+  document.querySelectorAll('.nav-btn').forEach((b,i)=>b.classList.toggle('act',i===n));
+  document.querySelectorAll('.page').forEach((p,i)=>p.classList.toggle('act',i===n));
+  if(n===5) genReport();
 }
 
-function getEpsilon() {
-    return parseFloat(document.getElementById('epsilon').value) || 76000;
+// ====================== UTILITIES ======================
+function el(id){return document.getElementById(id)}
+function destroyChart(id){if(charts[id]){charts[id].destroy();delete charts[id]}}
+function concMgToMol(mg){return(mg/1000)/(MW/1000)} // mg/mL → mol/L
+function concUmToMol(um){return um*1e-6} // μM → mol/L
+function theoA(concMol,eps,l){return eps*l*concMol}
+
+function linReg(xs,ys){
+  const n=xs.length;let sx=0,sy=0,sxy=0,sx2=0;
+  for(let i=0;i<n;i++){sx+=xs[i];sy+=ys[i];sxy+=xs[i]*ys[i];sx2+=xs[i]*xs[i]}
+  const mx=sx/n,my=sy/n,sl=(sxy-n*mx*my)/(sx2-n*mx*mx||1e-30),ic=my-sl*mx;
+  let ssr=0,sst=0;for(let i=0;i<n;i++){ssr+=(ys[i]-(sl*xs[i]+ic))**2;sst+=(ys[i]-my)**2}
+  return{slope:sl,intercept:ic,r2:sst?1-ssr/sst:0}
 }
 
-function getPathLength() {
-    return parseFloat(document.getElementById('pathLength').value) || 0.3;
+function stdev(a){const m=a.reduce((s,v)=>s+v,0)/a.length;return Math.sqrt(a.reduce((s,v)=>s+(v-m)**2,0)/a.length)}
+function mean(a){return a.reduce((s,v)=>s+v,0)/a.length}
+function iqr(a){const s=[...a].sort((x,y)=>x-y),q1=s[Math.floor(s.length*.25)],q3=s[Math.floor(s.length*.75)];return{q1,q3,iqr:q3-q1}}
+
+// One-way ANOVA
+function anova1(groups){
+  const allVals=[],gMeans=[];let N=0;
+  groups.forEach(g=>{const m=mean(g);gMeans.push(m);allVals.push(...g);N+=g.length});
+  const GM=mean(allVals),k=groups.length;
+  let SSB=0,SSW=0;
+  groups.forEach((g,i)=>{SSB+=g.length*(gMeans[i]-GM)**2;g.forEach(v=>{SSW+=(v-gMeans[i])**2})});
+  const dfB=k-1,dfW=N-k,MSB=SSB/dfB,MSW=SSW/(dfW||1),F=MSB/(MSW||1e-30);
+  // Approximate p-value using F-distribution (simplified)
+  const p=fDistP(F,dfB,dfW);
+  return{F:F,dfB,dfW,MSB,MSW,SSB,SSW,p,sig:p<0.05}
 }
 
-function getConcentrations(unit) {
-    return DILUTION_FACTORS.map(f => {
-        if (f === Infinity) return 0;
-        if (unit === 'mol') return STOCK_CONC_MOL / f;
-        return STOCK_CONC_MG / f;
+// Two-way ANOVA (simplified)
+function anova2(data,rowLevels,colLevels){
+  const allVals=[];const rowGroups={},colGroups={};
+  rowLevels.forEach(r=>{rowGroups[r]=[]});colLevels.forEach(c=>{colGroups[c]=[]});
+  rowLevels.forEach(r=>{colLevels.forEach((c,ci)=>{
+    const v=data[r]?.[ci];if(v!=null){allVals.push(v);rowGroups[r].push(v);colGroups[c].push(v)}
+  })});
+  if(allVals.length<4)return{Fr:0,Fc:0,pR:1,pC:1,sig:false};
+  const GM=mean(allVals),N=allVals.length,a=rowLevels.length,b=colLevels.length;
+  let SSR=0,SSC=0,SST=0;
+  allVals.forEach(v=>SST+=(v-GM)**2);
+  rowLevels.forEach(r=>{if(rowGroups[r].length)SSR+=rowGroups[r].length*(mean(rowGroups[r])-GM)**2});
+  colLevels.forEach(c=>{if(colGroups[c].length)SSC+=colGroups[c].length*(mean(colGroups[c])-GM)**2});
+  const SSE=Math.max(SST-SSR-SSC,1e-10);
+  const dfR=a-1,dfC=b-1,dfE=Math.max(N-a-b+1,1);
+  const MSR=SSR/dfR,MSC=SSC/dfC,MSE=SSE/dfE;
+  const Fr=MSR/(MSE||1e-30),Fc=MSC/(MSE||1e-30);
+  return{Fr,Fc,pR:fDistP(Fr,dfR,dfE),pC:fDistP(Fc,dfC,dfE),dfR,dfC,dfE,SSR,SSC,SSE,sig:fDistP(Fr,dfR,dfE)<0.05||fDistP(Fc,dfC,dfE)<0.05}
+}
+
+// Approximate F-distribution p-value (Abramowitz & Stegun)
+function fDistP(F,d1,d2){
+  if(F<=0||d1<=0||d2<=0)return 1;
+  const x=d2/(d2+d1*F);return betaInc(d2/2,d1/2,x)
+}
+function betaInc(a,b,x){
+  if(x<=0)return 1;if(x>=1)return 0;
+  const bt=Math.exp(lnGamma(a+b)-lnGamma(a)-lnGamma(b)+a*Math.log(x)+b*Math.log(1-x));
+  if(x<(a+1)/(a+b+2))return 1-bt*betaCF(a,b,x)/a;
+  return bt*betaCF(b,a,1-x)/b
+}
+function betaCF(a,b,x){
+  const max=100;let qab=a+b,qap=a+1,qam=a-1,c=1,d=1-qab*x/qap;
+  if(Math.abs(d)<1e-30)d=1e-30;d=1/d;let h=d;
+  for(let m=1;m<=max;m++){
+    let m2=2*m,aa=m*(b-m)*x/((qam+m2)*(a+m2));
+    d=1+aa*d;if(Math.abs(d)<1e-30)d=1e-30;c=1+aa/c;if(Math.abs(c)<1e-30)c=1e-30;
+    d=1/d;h*=d*c;aa=-(a+m)*(qab+m)*x/((a+m2)*(qap+m2));
+    d=1+aa*d;if(Math.abs(d)<1e-30)d=1e-30;c=1+aa/c;if(Math.abs(c)<1e-30)c=1e-30;
+    d=1/d;let del=d*c;h*=del;if(Math.abs(del-1)<3e-7)break
+  }
+  return h
+}
+function lnGamma(x){
+  const c=[76.18009172947146,-86.50532032941677,24.01409824083091,-1.231739572450155,0.1208650973866179e-2,-0.5395239384953e-5];
+  let y=x,tmp=x+5.5;tmp-=(x+.5)*Math.log(tmp);let ser=1.000000000190015;
+  for(let j=0;j<6;j++)ser+=c[j]/++y;
+  return-tmp+Math.log(2.5066282746310005*ser/x)
+}
+
+const COLORS=['#1a73e8','#0f9d58','#f9a825','#d32f2f','#9c27b0','#00bcd4','#ff5722'];
+
+// ====================== PAGE 0: Basic Measurement ======================
+function initP0(){
+  const plate=el('plateVis');plate.innerHTML='';
+  for(let i=0;i<12;i++){
+    const w=document.createElement('div');w.className='well';
+    const t=i<11?Math.max(0,1-i*.09):0;
+    w.style.background=i<11?`rgba(0,${50+t*30},${150+t*105},${.15+t*.85})`:'#f0f0f0';
+    w.style.borderColor=i<11?`rgba(0,60,180,${.3+t*.5})`:'#ccc';
+    const ct=i<11?(P0_CONCS_MG[i]>=.01?P0_CONCS_MG[i].toFixed(3):P0_CONCS_MG[i].toExponential(1)):'blank';
+    w.innerHTML=`<span style="font-size:.7rem;font-weight:700;color:${t>.3?'#fff':'#333'}">${WELLS[i]}</span><span style="font-size:.55rem;color:${t>.3?'rgba(255,255,255,.85)':'#666'}">${ct}</span>`;
+    w.title=`${WELLS[i]}: ${P0_LABELS[i]}\n${ct} mg/mL\n${P0_FACTORS[i]===Infinity?'∞':P0_FACTORS[i]+'×'} 희석`;
+    plate.appendChild(w);
+  }
+
+  const tb=el('tb0');tb.innerHTML='';
+  for(let i=0;i<12;i++){
+    const cm=concMgToMol(P0_CONCS_MG[i]),um=cm*1e6,l=parseFloat(el('pl0').value)||.3,eps=parseFloat(el('eps0').value)||76000;
+    const ta=i<11?theoA(cm,eps,l):0;
+    const tr=document.createElement('tr');if(i===11)tr.style.background='#fff3e0';
+    tr.innerHTML=`<td style="font-weight:600">${WELLS[i]}</td><td>${P0_LABELS[i]}</td><td>${P0_FACTORS[i]===Infinity?'∞':P0_FACTORS[i]+'×'}</td>
+    <td>${i<11?(P0_CONCS_MG[i]>=.001?P0_CONCS_MG[i].toFixed(4):P0_CONCS_MG[i].toExponential(2)):'0'}</td><td>${um.toFixed(2)}</td><td>${ta.toFixed(4)}</td>
+    <td><input type="number" step="0.001" id="m0_${i}" value="${D0[i]!==null?D0[i]:''}" oninput="D0[${i}]=this.value?parseFloat(this.value):null" placeholder="0.000"></td>
+    <td id="cor0_${i}">-</td><td id="err0_${i}">-</td>`;
+    tb.appendChild(tr);
+  }
+}
+
+function calcP0(){
+  initP0();
+  for(let i=0;i<12;i++)if(D0[i]!==null)el(`m0_${i}`).value=D0[i];
+  if(!D0.some(v=>v!==null)){el('p0stats').style.display='none';return}
+
+  const bl=D0[11]||0,eps=parseFloat(el('eps0').value)||76000,l=parseFloat(el('pl0').value)||.3;
+  const cor=D0.map(v=>v!==null?Math.max(0,v-bl):null);
+  const errs=[],pairs=[];
+
+  for(let i=0;i<11;i++){
+    const cm=concMgToMol(P0_CONCS_MG[i]),ta=theoA(cm,eps,l);
+    if(cor[i]!==null){
+      el(`cor0_${i}`).textContent=cor[i].toFixed(4);
+      const e=ta>0?((cor[i]-ta)/ta*100):0;errs.push({w:WELLS[i],e,ae:Math.abs(e)});
+      const bc=Math.abs(e)<10?'bg-ok':Math.abs(e)<25?'bg-wn':'bg-er';
+      el(`err0_${i}`).innerHTML=`<span class="${bc}">${e>0?'+':''}${e.toFixed(1)}%</span>`;
+      pairs.push({x:cm,y:cor[i],mg:P0_CONCS_MG[i]});
+    }
+  }
+  if(cor[11]!==null){el(`cor0_${11}`).textContent=cor[11].toFixed(4);el(`err0_${11}`).textContent='blank'}
+
+  const reg=linReg(pairs.map(p=>p.x),pairs.map(p=>p.y));
+  const avgE=errs.length?mean(errs.map(e=>e.ae)):0;
+  const maxE=errs.length?Math.max(...errs.map(e=>e.ae)):0;
+  const epsCalc=reg.slope/l;
+
+  el('p0sg').innerHTML=`
+    <div class="st ${reg.r2>.99?'good':reg.r2>.95?'warn':'bad'}"><div class="v">${reg.r2.toFixed(4)}</div><div class="l">R²</div></div>
+    <div class="st"><div class="v">${(epsCalc).toFixed(0)}</div><div class="l">실험 ε (M⁻¹cm⁻¹)</div></div>
+    <div class="st ${avgE<10?'good':avgE<25?'warn':'bad'}"><div class="v">${avgE.toFixed(1)}%</div><div class="l">평균 오차</div></div>
+    <div class="st"><div class="v">${maxE.toFixed(1)}%</div><div class="l">최대 오차</div></div>`;
+
+  // Charts
+  destroyChart('c0lin');destroyChart('c0bar');
+  const theoLine=[];for(let c=0;c<=pairs[0].x*1.05;c+=pairs[0].x/80)theoLine.push({x:c,y:theoA(c,eps,l)});
+  const regLine=[];for(let c=0;c<=pairs[0].x*1.05;c+=pairs[0].x/80)regLine.push({x:c,y:reg.slope*c+reg.intercept});
+
+  charts.c0lin=new Chart(el('c0lin'),{type:'scatter',data:{datasets:[
+    {label:'측정값',data:pairs.map(p=>({x:p.x,y:p.y})),backgroundColor:'rgba(26,115,232,.8)',pointRadius:5},
+    {label:'이론선',data:theoLine,borderColor:'rgba(15,157,88,.5)',borderWidth:2,borderDash:[6,3],pointRadius:0,showLine:true,type:'line'},
+    {label:`회귀선 R²=${reg.r2.toFixed(4)}`,data:regLine,borderColor:'rgba(211,47,47,.6)',borderWidth:2,pointRadius:0,showLine:true,type:'line'}
+  ]},options:{responsive:true,maintainAspectRatio:false,scales:{x:{title:{display:true,text:'농도 (mol/L)'}},y:{title:{display:true,text:'흡광도'},beginAtZero:true}},plugins:{legend:{position:'bottom',labels:{font:{size:10}}}}}});
+
+  const lbs=errs.map(e=>e.w),tv=errs.map(e=>{const cm=concMgToMol(P0_CONCS_MG[WELLS.indexOf(e.w)]);return theoA(cm,eps,l)}),mv=pairs.map(p=>p.y);
+  charts.c0bar=new Chart(el('c0bar'),{type:'bar',data:{labels:lbs,datasets:[
+    {label:'이론',data:tv,backgroundColor:'rgba(15,157,88,.4)',borderColor:'#0f9d58',borderWidth:1},
+    {label:'측정(보정)',data:mv,backgroundColor:'rgba(26,115,232,.4)',borderColor:'#1a73e8',borderWidth:1}
+  ]},options:{responsive:true,maintainAspectRatio:false,scales:{y:{beginAtZero:true,title:{display:true,text:'흡광도'}}},plugins:{legend:{position:'bottom',labels:{font:{size:10}}}}}});
+
+  el('p0stats').style.display='block';
+}
+
+function sampleP0(){D0=[2.850,1.420,.715,.362,.178,.092,.048,.026,.015,.009,.006,.003];calcP0()}
+function clearP0(){D0=Array(12).fill(null);calcP0()}
+function csvP0(){
+  let c='Well,Dilution,Factor,Conc(mg/mL),Measured,Corrected,Error(%)\n';
+  const bl=D0[11]||0;
+  for(let i=0;i<12;i++){const v=D0[i],cr=v!=null?Math.max(0,v-bl):'';c+=`${WELLS[i]},${P0_LABELS[i]},${P0_FACTORS[i]===Infinity?'Inf':P0_FACTORS[i]},${P0_CONCS_MG[i]},${v??''},${cr!==''?cr.toFixed(4):''},\n`}
+  dl('p0_data.csv',c);
+}
+function dl(fn,txt){const b=new Blob(['\ufeff'+txt],{type:'text/csv;charset=utf-8;'});const a=document.createElement('a');a.href=URL.createObjectURL(b);a.download=fn;a.click()}
+
+// ====================== PAGE 1: Wavelength ======================
+function initP1(){
+  const tb=el('tb1');tb.innerHTML='';
+  P1_CONCS.forEach((conc,ci)=>{
+    const tr=document.createElement('tr');
+    let h=`<td style="font-weight:600">${conc}</td>`;
+    WLS.forEach((wl,wi)=>{
+      const key=`${wl}_${ci}`;
+      h+=`<td><input type="number" step="0.001" id="d1_${wi}_${ci}" value="${D1[key]??''}" oninput="D1['${key}']=this.value?parseFloat(this.value):null" placeholder="0.000"></td>`;
     });
+    tr.innerHTML=h;tb.appendChild(tr);
+  });
 }
 
-function theoreticalAbsorbance(concMol) {
-    return getEpsilon() * getPathLength() * concMol;
-}
+function calcP1(){
+  initP1();Object.keys(D1).forEach(k=>{const v=D1[k];if(v!==null){const[wi,ci]=k.split('_').map(Number);const inp=el(`d1_${wi}_${ci}`);if(inp)inp.value=v}});
 
-// ============ PLATE VISUALIZATION ============
-function buildPlate() {
-    const plate = document.getElementById('plateVisual');
-    plate.innerHTML = '';
-    const concsMg = getConcentrations('mg');
+  const hasData=Object.values(D1).some(v=>v!==null);
+  if(!hasData){el('p1res').style.display='none';return}
 
-    for (let i = 0; i < 12; i++) {
-        const well = document.createElement('div');
-        well.className = 'well';
-        const intensity = i < 11 ? Math.max(0, 1 - i * 0.09) : 0;
-        const r = Math.round(255 * (1 - intensity) + 0 * intensity);
-        const g = Math.round(255 * (1 - intensity) + 80 * intensity);
-        const b = Math.round(255 * (1 - intensity) + 200 * intensity);
-        well.style.background = i < 11
-            ? `rgba(0, ${50 + intensity * 30}, ${150 + intensity * 105}, ${0.15 + intensity * 0.85})`
-            : '#f0f0f0';
-        well.style.borderColor = i < 11 ? `rgba(0,60,180,${0.3 + intensity * 0.5})` : '#ccc';
+  const l=parseFloat(el('pl0').value)||.3;
+  const regs={},r2s={},slopes={};
 
-        const concText = i < 11
-            ? (concsMg[i] >= 0.01 ? concsMg[i].toFixed(3) : concsMg[i].toExponential(1))
-            : 'blank';
-
-        well.innerHTML = `
-            <span class="well-label" style="color:${i < 11 && intensity > 0.3 ? 'white' : '#333'}">${WELLS[i]}</span>
-            <span class="well-conc" style="color:${i < 11 && intensity > 0.3 ? 'rgba(255,255,255,0.85)' : '#666'}">${concText}</span>
-        `;
-        well.title = `${WELLS[i]}: ${DILUTION_LABELS[i]}\n농도: ${concText} mg/mL\n희석 배수: ${DILUTION_FACTORS[i] === Infinity ? '∞' : DILUTION_FACTORS[i] + '×'}`;
-        plate.appendChild(well);
-    }
-}
-
-// ============ DATA TABLE ============
-function buildTable() {
-    const tbody = document.getElementById('dataBody');
-    tbody.innerHTML = '';
-    const unit = document.getElementById('concUnit').value;
-    const concs = getConcentrations(unit);
-    const concsMol = getConcentrations('mol');
-
-    for (let i = 0; i < 12; i++) {
-        const tr = document.createElement('tr');
-        if (i === 11) tr.className = 'blank-row';
-
-        const theoA = i < 11 ? theoreticalAbsorbance(concsMol[i]) : 0;
-        const concStr = i < 11
-            ? (concs[i] >= 0.001 ? concs[i].toFixed(4) : concs[i].toExponential(3))
-            : '0';
-        const factorStr = DILUTION_FACTORS[i] === Infinity ? '∞' : DILUTION_FACTORS[i] + '×';
-
-        tr.innerHTML = `
-            <td style="font-weight:600;">${WELLS[i]}</td>
-            <td>${DILUTION_LABELS[i]}</td>
-            <td>${factorStr}</td>
-            <td>${concStr}${unit === 'mol' ? ' M' : ' mg/mL'}</td>
-            <td>${theoA.toFixed(4)}</td>
-            <td><input type="number" step="0.001" id="abs_${i}" value="${measuredData[i] !== null ? measuredData[i] : ''}" oninput="saveMeasured(${i}, this.value)" placeholder="0.000" /></td>
-            <td id="corrected_${i}">-</td>
-            <td id="error_${i}">-</td>
-        `;
-        tbody.appendChild(tr);
-    }
-}
-
-function saveMeasured(index, val) {
-    measuredData[index] = val !== '' ? parseFloat(val) : null;
-}
-
-// ============ ANALYSIS ============
-function updateAll() {
-    buildPlate();
-    buildTable();
-
-    // Restore saved values
-    for (let i = 0; i < 12; i++) {
-        if (measuredData[i] !== null) {
-            document.getElementById(`abs_${i}`).value = measuredData[i];
-        }
-    }
-
-    const hasData = measuredData.some(v => v !== null);
-    if (!hasData) {
-        document.getElementById('statsCard').style.display = 'none';
-        document.getElementById('chartsSection').style.display = 'none';
-        document.getElementById('analysisCard').style.display = 'none';
-        return;
-    }
-
-    // Blank correction
-    const blankVal = measuredData[11] !== null ? measuredData[11] : 0;
-    const corrected = measuredData.map((v, i) => {
-        if (v === null) return null;
-        return Math.max(0, v - blankVal);
+  WLS.forEach((wl,wi)=>{
+    const xs=[],ys=[];
+    P1_CONCS.forEach((conc,ci)=>{
+      const v=D1[`${wi}_${ci}`];
+      if(v!=null&&conc>0){xs.push(concUmToMol(conc));ys.push(v)}
     });
-
-    const concsMol = getConcentrations('mol');
-    const concsMg = getConcentrations('mg');
-
-    // Calculate errors
-    const errors = [];
-    for (let i = 0; i < 11; i++) {
-        const theoA = theoreticalAbsorbance(concsMol[i]);
-        if (corrected[i] !== null && theoA > 0) {
-            const err = ((corrected[i] - theoA) / theoA) * 100;
-            errors.push({ well: WELLS[i], error: err, absError: Math.abs(err) });
-            document.getElementById(`corrected_${i}`).textContent = corrected[i].toFixed(4);
-            const badge = Math.abs(err) < 10 ? 'badge-good' : Math.abs(err) < 25 ? 'badge-warning' : 'badge-bad';
-            document.getElementById(`error_${i}`).innerHTML = `<span class="badge ${badge}">${err > 0 ? '+' : ''}${err.toFixed(1)}%</span>`;
-        }
+    if(xs.length>=2){
+      const r=linReg(xs,ys);regs[wl]=r;r2s[wl]=r.r2;slopes[wl]=r.slope;
     }
-    if (corrected[11] !== null) {
-        document.getElementById(`corrected_${11}`).textContent = corrected[11].toFixed(4);
-        document.getElementById(`error_${11}`).textContent = 'blank';
-    }
+  });
 
-    // Linear regression (concentration in mol/L vs corrected absorbance)
-    const validPairs = [];
-    for (let i = 0; i < 11; i++) {
-        if (corrected[i] !== null) {
-            validPairs.push({ x: concsMol[i], y: corrected[i], xMg: concsMg[i], well: WELLS[i] });
-        }
-    }
+  // Find top 3 wavelengths by R²×slope
+  const ranked=Object.entries(slopes).sort((a,b)=>(r2s[b[0]]*(b[1]))-(r2s[a[0]]*(a[1])));
+  if(ranked.length>=3)p1_selWL=ranked.slice(0,3).map(r=>parseInt(r[0]));
 
-    let r2 = 0, slope = 0, intercept = 0;
-    if (validPairs.length >= 2) {
-        const reg = linearRegression(validPairs.map(p => p.x), validPairs.map(p => p.y));
-        r2 = reg.r2;
-        slope = reg.slope;
-        intercept = reg.intercept;
-    }
+  // Stats
+  el('p1sg').innerHTML=WLS.filter(wl=>regs[wl]).map(wl=>`
+    <div class="st ${r2s[wl]>.99?'good':r2s[wl]>.95?'warn':'bad'}">
+      <div class="v">${r2s[wl]?.toFixed(4)??'-'}</div>
+      <div class="l">${wl}nm R²</div>
+      <div style="font-size:.7rem;color:var(--ts);margin-top:.1rem">기울기: ${slopes[wl]?.toFixed(1)??'-'}</div>
+    </div>`).join('');
 
-    // Average error
-    const avgError = errors.length > 0 ? errors.reduce((s, e) => s + e.absError, 0) / errors.length : 0;
-    const maxError = errors.length > 0 ? Math.max(...errors.map(e => e.absError)) : 0;
+  // Calibration curves
+  destroyChart('c1cal');destroyChart('c1sens');
+  const ds=[];
+  WLS.forEach((wl,wi)=>{
+    const pts=[];
+    P1_CONCS.forEach((conc,ci)=>{const v=D1[`${wi}_${ci}`];if(v!=null)pts.push({x:conc,y:v})});
+    if(pts.length)ds.push({label:`${wl}nm`,data:pts,borderColor:COLORS[wi],backgroundColor:COLORS[wi]+'33',pointRadius:4,showLine:true,borderWidth:2});
+  });
+  charts.c1cal=new Chart(el('c1cal'),{type:'scatter',data:{datasets:ds},options:{responsive:true,maintainAspectRatio:false,scales:{x:{title:{display:true,text:'농도 (μM)'}},y:{title:{display:true,text:'흡광도'},beginAtZero:true}},plugins:{legend:{position:'bottom',labels:{font:{size:10}}}}}});
 
-    // Stats cards
-    showStats(r2, slope, intercept, avgError, maxError, validPairs.length);
+  // Sensitivity bar chart
+  const wlLabels=WLS.filter(wl=>regs[wl]);
+  charts.c1sens=new Chart(el('c1sens'),{type:'bar',data:{
+    labels:wlLabels.map(wl=>wl+'nm'),
+    datasets:[
+      {label:'R²',data:wlLabels.map(wl=>r2s[wl]),backgroundColor:'rgba(26,115,232,.5)',yAxisID:'y'},
+      {label:'기울기(감도)',data:wlLabels.map(wl=>slopes[wl]),backgroundColor:'rgba(15,157,88,.5)',yAxisID:'y1'}
+    ]},options:{responsive:true,maintainAspectRatio:false,scales:{y:{beginAtZero:true,max:1.1,title:{display:true,text:'R²'},position:'left'},y1:{beginAtZero:true,title:{display:true,text:'기울기'},position:'right',grid:{drawOnChartArea:false}}},plugins:{legend:{position:'bottom',labels:{font:{size:10}}}}}});
 
-    // Charts
-    drawCharts(validPairs, corrected, concsMol, concsMg, slope, intercept, errors);
+  // ANOVA
+  const groups=[];
+  WLS.forEach((wl,wi)=>{
+    const vals=[];P1_CONCS.forEach((conc,ci)=>{if(conc>0){const v=D1[`${wi}_${ci}`];if(v!=null)vals.push(v)}});
+    if(vals.length)groups.push(vals);
+  });
+  if(groups.length>=2){
+    const a=anova1(groups);
+    el('p1anova').innerHTML=`<h2>일원 ANOVA (파장 간 흡광도 차이)</h2>
+    <div class="ab ${a.sig?'ok':'wn'}"><h4>결과: F(${a.dfB}, ${a.dfW}) = ${a.F.toFixed(3)}, p ${a.p<.001?'< 0.001':'= '+a.p.toFixed(4)}</h4>
+    <p>${a.sig?'파장 간 흡광도 차이가 통계적으로 유의합니다 (p < 0.05). 664nm에서 최대 감도를 보일 것으로 예상됩니다.':'파장 간 유의한 차이가 관찰되지 않았습니다.'}</p>
+    <ul><li>SSB (처리 간): ${a.SSB.toFixed(4)}</li><li>SSW (처리 내): ${a.SSW.toFixed(4)}</li><li>최적 파장: ${ranked[0]?ranked[0][0]+'nm':'N/A'} (최고 감도)</li></ul></div>`;
+  }
 
-    // Detailed analysis
-    showAnalysis(r2, slope, intercept, avgError, errors, validPairs);
-
-    document.getElementById('statsCard').style.display = 'block';
-    document.getElementById('chartsSection').style.display = 'grid';
-    document.getElementById('analysisCard').style.display = 'block';
+  el('p1res').style.display='block';
+  // Update Phase 2,3 headers
+  updateP2P3Headers();
 }
 
-function linearRegression(xs, ys) {
-    const n = xs.length;
-    let sumX = 0, sumY = 0, sumXY = 0, sumX2 = 0, sumY2 = 0;
-    for (let i = 0; i < n; i++) {
-        sumX += xs[i]; sumY += ys[i];
-        sumXY += xs[i] * ys[i];
-        sumX2 += xs[i] * xs[i];
-        sumY2 += ys[i] * ys[i];
-    }
-    const meanX = sumX / n, meanY = sumY / n;
-    const slope = (sumXY - n * meanX * meanY) / (sumX2 - n * meanX * meanX);
-    const intercept = meanY - slope * meanX;
+function sampleP1(){
+  const l=.3;
+  WLS.forEach((wl,wi)=>{
+    const eps=EPS_WL[wl];
+    P1_CONCS.forEach((conc,ci)=>{
+      const noise=1+(Math.random()-.5)*.08;
+      D1[`${wi}_${ci}`]=conc===0?(.001+Math.random()*.002):parseFloat((theoA(concUmToMol(conc),eps,l)*noise).toFixed(4));
+    });
+  });
+  calcP1();
+}
+function clearP1(){D1={};calcP1()}
 
-    let ssRes = 0, ssTot = 0;
-    for (let i = 0; i < n; i++) {
-        const pred = slope * xs[i] + intercept;
-        ssRes += (ys[i] - pred) ** 2;
-        ssTot += (ys[i] - meanY) ** 2;
-    }
-    const r2 = ssTot === 0 ? 0 : 1 - ssRes / ssTot;
-    return { slope, intercept, r2 };
+// ====================== PAGE 2: Temperature ======================
+function updateP2P3Headers(){
+  p1_selWL.forEach((wl,i)=>{
+    el(`p2h${i+1}`).textContent=wl+'nm';
+    el(`p3h${i+1}`).textContent=wl+'nm';
+  });
+  initP2();initP3();
 }
 
-// ============ STATS DISPLAY ============
-function showStats(r2, slope, intercept, avgError, maxError, dataPoints) {
-    const grid = document.getElementById('statsGrid');
-    const r2Class = r2 > 0.99 ? 'good' : r2 > 0.95 ? 'warning' : 'bad';
-    const errClass = avgError < 10 ? 'good' : avgError < 25 ? 'warning' : 'bad';
-    const epsilonCalc = slope; // slope ≈ ε * l
-
-    grid.innerHTML = `
-        <div class="stat-card ${r2Class}">
-            <div class="stat-value">${r2.toFixed(4)}</div>
-            <div class="stat-label">R² (결정계수)</div>
-        </div>
-        <div class="stat-card">
-            <div class="stat-value">${(slope / getPathLength()).toFixed(0)}</div>
-            <div class="stat-label">실험적 ε (M⁻¹cm⁻¹)</div>
-        </div>
-        <div class="stat-card ${errClass}">
-            <div class="stat-value">${avgError.toFixed(1)}%</div>
-            <div class="stat-label">평균 오차율</div>
-        </div>
-        <div class="stat-card">
-            <div class="stat-value">${maxError.toFixed(1)}%</div>
-            <div class="stat-label">최대 오차율</div>
-        </div>
-        <div class="stat-card">
-            <div class="stat-value">${dataPoints}</div>
-            <div class="stat-label">유효 데이터 수</div>
-        </div>
-        <div class="stat-card">
-            <div class="stat-value">${intercept >= 0 ? '+' : ''}${intercept.toFixed(4)}</div>
-            <div class="stat-label">y절편 (이상적: 0)</div>
-        </div>
-    `;
+function initP2(){
+  el('p2wl').innerHTML=`<span style="font-size:.82rem;color:var(--ts)">측정 파장 (Phase 1 결과): <strong>${p1_selWL.join(', ')} nm</strong></span>`;
+  const tb=el('tb2');tb.innerHTML='';
+  TEMPS.forEach((t,ti)=>{
+    const tr=document.createElement('tr');
+    let h=`<td style="font-weight:600">${t}°C</td>`;
+    p1_selWL.forEach((wl,wi)=>{
+      const key=`${t}_${wi}`;
+      h+=`<td><input type="number" step="0.001" id="d2_${ti}_${wi}" value="${D2[key]??''}" oninput="D2['${key}']=this.value?parseFloat(this.value):null" placeholder="0.000"></td>`;
+    });
+    tr.innerHTML=h;tb.appendChild(tr);
+  });
 }
 
-// ============ CHARTS ============
-function drawCharts(validPairs, corrected, concsMol, concsMg, slope, intercept, errors) {
-    // Destroy existing charts
-    Object.values(charts).forEach(c => c.destroy());
-    charts = {};
+function calcP2(){
+  initP2();Object.keys(D2).forEach(k=>{const v=D2[k];if(v!==null){const[t,wi]=k.split('_');const ti=TEMPS.indexOf(parseInt(t));const inp=el(`d2_${ti}_${parseInt(wi)}`);if(inp)inp.value=v}});
 
-    const unit = document.getElementById('concUnit').value;
+  if(!Object.values(D2).some(v=>v!==null)){el('p2res').style.display='none';return}
 
-    // 1. Linear chart
-    const ctx1 = document.getElementById('linearChart').getContext('2d');
-    const theoPoints = [];
-    for (let c = 0; c <= concsMol[0] * 1.05; c += concsMol[0] / 100) {
-        theoPoints.push({ x: unit === 'mol' ? c : c * MW_MB, y: theoreticalAbsorbance(c) });
-    }
-    const regPoints = [];
-    for (let c = 0; c <= concsMol[0] * 1.05; c += concsMol[0] / 100) {
-        regPoints.push({ x: unit === 'mol' ? c : c * MW_MB, y: slope * c + intercept });
-    }
+  // Line chart
+  destroyChart('c2line');
+  const ds=p1_selWL.map((wl,wi)=>{
+    const pts=[];
+    TEMPS.forEach((t)=>{const v=D2[`${t}_${wi}`];if(v!=null)pts.push({x:t,y:v})});
+    return{label:wl+'nm',data:pts,borderColor:COLORS[wi],backgroundColor:COLORS[wi]+'33',pointRadius:5,showLine:true,borderWidth:2,tension:.3};
+  });
+  charts.c2line=new Chart(el('c2line'),{type:'scatter',data:{datasets:ds},options:{responsive:true,maintainAspectRatio:false,scales:{x:{title:{display:true,text:'온도 (°C)'}},y:{title:{display:true,text:'흡광도'},beginAtZero:true}},plugins:{legend:{position:'bottom',labels:{font:{size:10}}}}}});
 
-    charts.linear = new Chart(ctx1, {
-        type: 'scatter',
-        data: {
-            datasets: [
-                {
-                    label: '측정값 (보정)',
-                    data: validPairs.map(p => ({ x: unit === 'mol' ? p.x : p.xMg, y: p.y })),
-                    backgroundColor: 'rgba(26,115,232,0.8)',
-                    borderColor: '#1a73e8',
-                    pointRadius: 6,
-                    pointHoverRadius: 9,
-                },
-                {
-                    label: '이론값 (Beer-Lambert)',
-                    data: theoPoints,
-                    borderColor: 'rgba(15,157,88,0.6)',
-                    backgroundColor: 'transparent',
-                    borderWidth: 2,
-                    borderDash: [6, 3],
-                    pointRadius: 0,
-                    showLine: true,
-                    type: 'line',
-                },
-                {
-                    label: `회귀선 (R²=${(linearRegression(validPairs.map(p=>p.x), validPairs.map(p=>p.y)).r2).toFixed(4)})`,
-                    data: regPoints,
-                    borderColor: 'rgba(219,68,55,0.7)',
-                    backgroundColor: 'transparent',
-                    borderWidth: 2,
-                    pointRadius: 0,
-                    showLine: true,
-                    type: 'line',
-                }
-            ]
-        },
-        options: {
-            responsive: true,
-            maintainAspectRatio: false,
-            scales: {
-                x: { title: { display: true, text: unit === 'mol' ? '농도 (mol/L)' : '농도 (mg/mL)' } },
-                y: { title: { display: true, text: '흡광도 (A.U.)' }, beginAtZero: true }
-            },
-            plugins: { legend: { position: 'bottom', labels: { font: { size: 11 } } } }
-        }
+  // Heatmap: change rate vs 25°C
+  const hm=el('p2hm');hm.innerHTML='<div style="display:grid;grid-template-columns:60px repeat('+p1_selWL.length+',1fr);gap:2px">';
+  let h='<div style="font-size:.72rem;font-weight:600"></div>';
+  p1_selWL.forEach(wl=>h+=`<div style="font-size:.72rem;font-weight:600;text-align:center">${wl}nm</div>`);
+  h+='</div>';
+  TEMPS.forEach(t=>{
+    h+=`<div style="display:grid;grid-template-columns:60px repeat(${p1_selWL.length},1fr);gap:2px">`;
+    h+=`<div style="font-size:.75rem;font-weight:600;display:flex;align-items:center">${t}°C</div>`;
+    p1_selWL.forEach((wl,wi)=>{
+      const v=D2[`${t}_${wi}`],ref=D2[`25_${wi}`];
+      if(v!=null&&ref!=null&&ref>0){
+        const pct=((v-ref)/ref*100);
+        const color=pct>5?`rgba(211,47,47,${Math.min(Math.abs(pct)/30,.9)})`:pct<-5?`rgba(21,101,192,${Math.min(Math.abs(pct)/30,.9)})`:'rgba(15,157,88,.5)';
+        h+=`<div class="hm-cell" style="background:${color}">${pct>0?'+':''}${pct.toFixed(1)}%</div>`;
+      } else h+=`<div class="hm-cell" style="background:#eee;color:#999">-</div>`;
     });
+    h+='</div>';
+  });
+  hm.innerHTML=h;
 
-    // 2. Log chart
-    const ctx2 = document.getElementById('logChart').getContext('2d');
-    const logValid = validPairs.filter(p => p.x > 0 && p.y > 0);
+  // Two-way ANOVA
+  const data2={};TEMPS.forEach(t=>{data2[t]=p1_selWL.map((wl,wi)=>D2[`${t}_${wi}`]??null)});
+  const a=anova2(data2,TEMPS,p1_selWL);
+  el('p2anova').innerHTML=`<h2>이원 ANOVA (온도 × 파장)</h2>
+  <div class="ab ${a.sig?'ok':'wn'}"><h4>결과</h4><ul>
+  <li>온도 효과: F = ${a.Fr.toFixed(3)}, p ${a.pR<.001?'< 0.001':'= '+a.pR.toFixed(4)} ${a.pR<.05?'✓ 유의':'✗ 비유의'}</li>
+  <li>파장 효과: F = ${a.Fc.toFixed(3)}, p ${a.pC<.001?'< 0.001':'= '+a.pC.toFixed(4)} ${a.pC<.05?'✓ 유의':'✗ 비유의'}</li>
+  </ul><p>60°C에서 이합체(dimer) → 단량체 분리에 따른 흡광도 변화 및 blue shift 여부를 확인하세요.</p></div>`;
 
-    charts.log = new Chart(ctx2, {
-        type: 'scatter',
-        data: {
-            datasets: [
-                {
-                    label: '측정값 (log scale)',
-                    data: logValid.map(p => ({ x: unit === 'mol' ? p.x : p.xMg, y: p.y })),
-                    backgroundColor: 'rgba(26,115,232,0.8)',
-                    borderColor: '#1a73e8',
-                    pointRadius: 6,
-                },
-                {
-                    label: '이론값',
-                    data: concsMol.slice(0, 11).filter(c => c > 0).map(c => ({
-                        x: unit === 'mol' ? c : c * MW_MB,
-                        y: theoreticalAbsorbance(c)
-                    })),
-                    backgroundColor: 'rgba(15,157,88,0.6)',
-                    borderColor: '#0f9d58',
-                    pointRadius: 5,
-                    pointStyle: 'triangle',
-                }
-            ]
-        },
-        options: {
-            responsive: true,
-            maintainAspectRatio: false,
-            scales: {
-                x: {
-                    type: 'logarithmic',
-                    title: { display: true, text: unit === 'mol' ? '농도 (mol/L, log)' : '농도 (mg/mL, log)' }
-                },
-                y: {
-                    type: 'logarithmic',
-                    title: { display: true, text: '흡광도 (A.U., log)' }
-                }
-            },
-            plugins: { legend: { position: 'bottom', labels: { font: { size: 11 } } } }
-        }
-    });
-
-    // 3. Comparison chart (bar)
-    const ctx3 = document.getElementById('comparisonChart').getContext('2d');
-    const labels = [];
-    const theoVals = [];
-    const measVals = [];
-    for (let i = 0; i < 11; i++) {
-        if (corrected[i] !== null) {
-            labels.push(WELLS[i]);
-            theoVals.push(theoreticalAbsorbance(concsMol[i]));
-            measVals.push(corrected[i]);
-        }
-    }
-
-    charts.comparison = new Chart(ctx3, {
-        type: 'bar',
-        data: {
-            labels: labels,
-            datasets: [
-                {
-                    label: '이론 흡광도',
-                    data: theoVals,
-                    backgroundColor: 'rgba(15,157,88,0.5)',
-                    borderColor: '#0f9d58',
-                    borderWidth: 1,
-                },
-                {
-                    label: '측정 흡광도 (보정)',
-                    data: measVals,
-                    backgroundColor: 'rgba(26,115,232,0.5)',
-                    borderColor: '#1a73e8',
-                    borderWidth: 1,
-                }
-            ]
-        },
-        options: {
-            responsive: true,
-            maintainAspectRatio: false,
-            scales: {
-                y: { title: { display: true, text: '흡광도 (A.U.)' }, beginAtZero: true }
-            },
-            plugins: { legend: { position: 'bottom', labels: { font: { size: 11 } } } }
-        }
-    });
-
-    // 4. Error chart
-    const ctx4 = document.getElementById('errorChart').getContext('2d');
-    charts.error = new Chart(ctx4, {
-        type: 'bar',
-        data: {
-            labels: errors.map(e => e.well),
-            datasets: [{
-                label: '오차율 (%)',
-                data: errors.map(e => e.error),
-                backgroundColor: errors.map(e =>
-                    Math.abs(e.error) < 10 ? 'rgba(15,157,88,0.6)' :
-                    Math.abs(e.error) < 25 ? 'rgba(244,180,0,0.6)' : 'rgba(219,68,55,0.6)'
-                ),
-                borderColor: errors.map(e =>
-                    Math.abs(e.error) < 10 ? '#0f9d58' :
-                    Math.abs(e.error) < 25 ? '#e37400' : '#db4437'
-                ),
-                borderWidth: 1,
-            }]
-        },
-        options: {
-            responsive: true,
-            maintainAspectRatio: false,
-            scales: {
-                y: {
-                    title: { display: true, text: '오차율 (%)' },
-                    grid: { color: (ctx) => ctx.tick.value === 0 ? '#333' : '#e0e0e0' }
-                }
-            },
-            plugins: {
-                legend: { display: false },
-                annotation: { annotations: {} }
-            }
-        }
-    });
+  el('p2res').style.display='block';
 }
 
-// ============ DETAILED ANALYSIS ============
-function showAnalysis(r2, slope, intercept, avgError, errors, validPairs) {
-    // Linearity
-    let linearityGrade, linearityDesc;
-    if (r2 >= 0.999) {
-        linearityGrade = '우수 (Excellent)';
-        linearityDesc = 'Beer-Lambert 법칙의 선형성이 매우 잘 성립합니다. 피펫팅 정확도가 높습니다.';
-    } else if (r2 >= 0.99) {
-        linearityGrade = '양호 (Good)';
-        linearityDesc = '선형성이 양호합니다. 약간의 피펫팅 오차가 있으나 실험 결과로 충분합니다.';
-    } else if (r2 >= 0.95) {
-        linearityGrade = '보통 (Fair)';
-        linearityDesc = '선형성이 보통입니다. 피펫팅 과정에서 유의미한 오차가 발생했을 수 있습니다.';
+function sampleP2(){
+  const l=.3;
+  TEMPS.forEach(t=>{
+    p1_selWL.forEach((wl,wi)=>{
+      const eps=EPS_WL[wl]||76000;
+      const base=theoA(concUmToMol(10),eps,l);
+      const tFactor=t===4?.95:t===25?1:t===40?1.03:1.08;
+      const noise=1+(Math.random()-.5)*.06;
+      D2[`${t}_${wi}`]=parseFloat((base*tFactor*noise).toFixed(4));
+    });
+  });
+  calcP2();
+}
+function clearP2(){D2={};calcP2()}
+
+// ====================== PAGE 3: pH ======================
+function initP3(){
+  const tb=el('tb3');tb.innerHTML='';
+  PHS.forEach((ph,pi)=>{
+    const tr=document.createElement('tr');
+    let h=`<td style="font-weight:600">pH ${ph}</td>`;
+    p1_selWL.forEach((wl,wi)=>{
+      const key=`${ph}_${wi}`;
+      h+=`<td><input type="number" step="0.001" id="d3_${pi}_${wi}" value="${D3[key]??''}" oninput="D3['${key}']=this.value?parseFloat(this.value):null" placeholder="0.000"></td>`;
+    });
+    tr.innerHTML=h;tb.appendChild(tr);
+  });
+}
+
+function calcP3(){
+  initP3();Object.keys(D3).forEach(k=>{const v=D3[k];if(v!==null){const[ph,wi]=k.split('_');const pi=PHS.indexOf(parseInt(ph));const inp=el(`d3_${pi}_${parseInt(wi)}`);if(inp)inp.value=v}});
+
+  if(!Object.values(D3).some(v=>v!==null)){el('p3res').style.display='none';return}
+
+  destroyChart('c3line');
+  const ds=p1_selWL.map((wl,wi)=>{
+    const pts=[];PHS.forEach(ph=>{const v=D3[`${ph}_${wi}`];if(v!=null)pts.push({x:ph,y:v})});
+    return{label:wl+'nm',data:pts,borderColor:COLORS[wi],backgroundColor:COLORS[wi]+'33',pointRadius:5,showLine:true,borderWidth:2,tension:.3};
+  });
+  charts.c3line=new Chart(el('c3line'),{type:'scatter',data:{datasets:ds},options:{responsive:true,maintainAspectRatio:false,scales:{x:{title:{display:true,text:'pH'},ticks:{stepSize:2}},y:{title:{display:true,text:'흡광도'},beginAtZero:true}},plugins:{legend:{position:'bottom',labels:{font:{size:10}}}}}});
+
+  // Heatmap
+  const hm=el('p3hm');let h='';
+  PHS.forEach(ph=>{
+    h+=`<div style="display:grid;grid-template-columns:60px repeat(${p1_selWL.length},1fr);gap:2px">`;
+    h+=`<div style="font-size:.75rem;font-weight:600;display:flex;align-items:center">pH ${ph}</div>`;
+    p1_selWL.forEach((wl,wi)=>{
+      const v=D3[`${ph}_${wi}`],ref=D3[`7_${wi}`];
+      if(v!=null&&ref!=null&&ref>0){
+        const pct=((v-ref)/ref*100);
+        const color=pct>5?`rgba(15,157,88,${Math.min(Math.abs(pct)/40,.85)})`:pct<-5?`rgba(211,47,47,${Math.min(Math.abs(pct)/40,.85)})`:'rgba(26,115,232,.4)';
+        h+=`<div class="hm-cell" style="background:${color}">${pct>0?'+':''}${pct.toFixed(1)}%</div>`;
+      } else h+=`<div class="hm-cell" style="background:#eee;color:#999">-</div>`;
+    });
+    h+='</div>';
+  });
+  hm.innerHTML=h;
+
+  // Anomaly detection (IQR)
+  const allVals=[];
+  PHS.forEach(ph=>{p1_selWL.forEach((wl,wi)=>{const v=D3[`${ph}_${wi}`];if(v!=null)allVals.push({ph,wl,v})})});
+  if(allVals.length>=4){
+    const vals=allVals.map(d=>d.v);
+    const {q1,q3,iqr:iqrVal}=iqr(vals);
+    const lower=q1-1.5*iqrVal,upper=q3+1.5*iqrVal;
+    const anomalies=allVals.filter(d=>d.v<lower||d.v>upper);
+    el('p3anomaly').innerHTML=`<h2>Anomaly Detection (leuco-MB 전환점)</h2>
+    <div class="ab ${anomalies.length?'wn':'ok'}"><h4>IQR 기반 이상치 탐지</h4>
+    <ul><li>Q1: ${q1.toFixed(4)}, Q3: ${q3.toFixed(4)}, IQR: ${iqrVal.toFixed(4)}</li>
+    <li>정상 범위: [${lower.toFixed(4)}, ${upper.toFixed(4)}]</li>
+    <li>이상치: ${anomalies.length}개 ${anomalies.map(a=>`(pH ${a.ph}, ${a.wl}nm: ${a.v.toFixed(4)})`).join(', ')}</li></ul>
+    <p>${anomalies.some(a=>a.ph<=5)?'<strong>산성 영역(pH ≤ 5)에서 흡광도 급감 감지 → leuco-MB 전환 가능성</strong>':'leuco-MB 전환 구간이 명확하지 않습니다.'}</p></div>`;
+  }
+
+  // Two-way ANOVA
+  const data3={};PHS.forEach(ph=>{data3[ph]=p1_selWL.map((wl,wi)=>D3[`${ph}_${wi}`]??null)});
+  const a=anova2(data3,PHS,p1_selWL);
+  el('p3anova').innerHTML=`<h2>이원 ANOVA (pH × 파장)</h2>
+  <div class="ab ${a.sig?'ok':'wn'}"><h4>결과</h4><ul>
+  <li>pH 효과: F = ${a.Fr.toFixed(3)}, p ${a.pR<.001?'< 0.001':'= '+a.pR.toFixed(4)} ${a.pR<.05?'✓ 유의':'✗ 비유의'}</li>
+  <li>파장 효과: F = ${a.Fc.toFixed(3)}, p ${a.pC<.001?'< 0.001':'= '+a.pC.toFixed(4)} ${a.pC<.05?'✓ 유의':'✗ 비유의'}</li>
+  </ul></div>`;
+
+  el('p3res').style.display='block';
+}
+
+function sampleP3(){
+  const l=.3;
+  PHS.forEach(ph=>{
+    p1_selWL.forEach((wl,wi)=>{
+      const eps=EPS_WL[wl]||76000;
+      const base=theoA(concUmToMol(10),eps,l);
+      const phFactor=ph===3?.15:ph===5?.55:ph===7?1:ph===9?.92:.85;
+      const noise=1+(Math.random()-.5)*.06;
+      D3[`${ph}_${wi}`]=parseFloat((base*phFactor*noise).toFixed(4));
+    });
+  });
+  calcP3();
+}
+function clearP3(){D3={};calcP3()}
+
+// ====================== PAGE 4: AI4SE ======================
+function loadAllSample(){sampleP0();sampleP1();sampleP2();sampleP3();go(4)}
+
+function runAI(){
+  // Collect all data into dataset
+  const dataset=[];
+
+  // From Phase 1
+  WLS.forEach((wl,wi)=>{
+    P1_CONCS.forEach((conc,ci)=>{
+      const v=D1[`${wi}_${ci}`];
+      if(v!=null&&conc>0)dataset.push({wl,temp:25,ph:7,conc,abs:v});
+    });
+  });
+  // From Phase 2
+  TEMPS.forEach(t=>{
+    p1_selWL.forEach((wl,wi)=>{
+      const v=D2[`${t}_${wi}`];
+      if(v!=null)dataset.push({wl,temp:t,ph:7,conc:10,abs:v});
+    });
+  });
+  // From Phase 3
+  PHS.forEach(ph=>{
+    p1_selWL.forEach((wl,wi)=>{
+      const v=D3[`${ph}_${wi}`];
+      if(v!=null)dataset.push({wl,temp:25,ph,conc:10,abs:v});
+    });
+  });
+
+  if(dataset.length<5){alert('데이터가 부족합니다. Phase 1~3 데이터를 먼저 입력하세요.');return}
+
+  // Progress
+  const steps=el('ai-prog').children;
+  [...steps].forEach(s=>s.className='prog-step');
+  steps[0].className='prog-step cur';
+
+  // Normalize features
+  const features=dataset.map(d=>[d.wl,d.temp,d.ph,d.conc]);
+  const targets=dataset.map(d=>d.abs);
+  const fNames=['파장(nm)','온도(°C)','pH','농도(μM)'];
+
+  // Min-max normalize
+  const mins=features[0].map((_,j)=>Math.min(...features.map(f=>f[j])));
+  const maxs=features[0].map((_,j)=>Math.max(...features.map(f=>f[j])));
+  const norm=features.map(f=>f.map((v,j)=>maxs[j]-mins[j]?((v-mins[j])/(maxs[j]-mins[j])):0));
+
+  steps[0].className='prog-step done';steps[1].className='prog-step cur';
+
+  // Ridge Regression (closed form: w = (X^T X + λI)^{-1} X^T y)
+  const lambda=0.1;
+  const Xaug=norm.map(r=>[1,...r]); // add bias
+  const p=Xaug[0].length,n=Xaug.length;
+
+  // X^T X
+  const XtX=Array(p).fill(0).map(()=>Array(p).fill(0));
+  const XtY=Array(p).fill(0);
+  for(let i=0;i<n;i++){
+    for(let j=0;j<p;j++){
+      XtY[j]+=Xaug[i][j]*targets[i];
+      for(let k=0;k<p;k++)XtX[j][k]+=Xaug[i][j]*Xaug[i][k];
+    }
+  }
+  // Add ridge penalty (skip bias)
+  for(let j=1;j<p;j++)XtX[j][j]+=lambda;
+
+  // Solve via Gauss elimination
+  const A=XtX.map((r,i)=>[...r,XtY[i]]);
+  for(let i=0;i<p;i++){
+    let maxRow=i;for(let k=i+1;k<p;k++)if(Math.abs(A[k][i])>Math.abs(A[maxRow][i]))maxRow=k;
+    [A[i],A[maxRow]]=[A[maxRow],A[i]];
+    for(let k=i+1;k<p;k++){const f=A[k][i]/(A[i][i]||1e-30);for(let j=i;j<=p;j++)A[k][j]-=f*A[i][j]}
+  }
+  const w=Array(p).fill(0);
+  for(let i=p-1;i>=0;i--){w[i]=A[i][p];for(let j=i+1;j<p;j++)w[i]-=A[i][j]*w[j];w[i]/=(A[i][i]||1e-30)}
+
+  // Predictions
+  const preds=Xaug.map(x=>x.reduce((s,v,j)=>s+v*w[j],0));
+  const regR2=linReg(preds,targets).r2;
+  const rmse=Math.sqrt(preds.reduce((s,p,i)=>s+(p-targets[i])**2,0)/n);
+
+  // Feature importance (absolute coefficients, skip bias)
+  const coefs=w.slice(1).map(Math.abs);
+  const coefSum=coefs.reduce((s,v)=>s+v,0)||1;
+  const importance=coefs.map(c=>(c/coefSum*100));
+
+  steps[1].className='prog-step done';steps[2].className='prog-step cur';
+
+  // Bayesian Optimization (simplified: random search with surrogate model)
+  const boHistory=[];
+  let bestAbs=-Infinity,bestConfig=null;
+
+  // Build prediction function using the ridge model
+  function predict(wl,temp,ph,conc){
+    const nf=[(wl-mins[0])/(maxs[0]-mins[0]||1),(temp-mins[1])/(maxs[1]-mins[1]||1),(ph-mins[2])/(maxs[2]-mins[2]||1),(conc-mins[3])/(maxs[3]-mins[3]||1)];
+    return w[0]+nf.reduce((s,v,j)=>s+v*w[j+1],0);
+  }
+
+  // Search space
+  const wlSpace=[550,570,590,600,610,620,630,640,650,660,664,670,680,690,700];
+  const tSpace=[4,10,15,20,25,30,35,40,50,60];
+  const phSpace=[3,4,5,6,7,8,9,10,11];
+  const concFixed=10; // fixed for optimization
+
+  // Acquisition: UCB-like with exploration
+  for(let iter=0;iter<30;iter++){
+    let candidateWL,candidateT,candidatePH,candidateAbs;
+
+    if(iter<5){
+      // Pure exploration
+      candidateWL=wlSpace[Math.floor(Math.random()*wlSpace.length)];
+      candidateT=tSpace[Math.floor(Math.random()*tSpace.length)];
+      candidatePH=phSpace[Math.floor(Math.random()*phSpace.length)];
     } else {
-        linearityGrade = '미흡 (Poor)';
-        linearityDesc = '선형성이 낮습니다. 피펫팅 기술 개선 또는 실험 조건 재검토가 필요합니다.';
+      // Exploitation with noise
+      const bestPrev=boHistory.reduce((b,h)=>h.abs>b.abs?h:b,boHistory[0]);
+      candidateWL=wlSpace[Math.min(wlSpace.length-1,Math.max(0,wlSpace.indexOf(bestPrev.wl)+(Math.random()>.5?1:-1)*Math.ceil(Math.random()*2)))];
+      candidateT=tSpace[Math.min(tSpace.length-1,Math.max(0,tSpace.indexOf(bestPrev.temp)+(Math.random()>.5?1:-1)*Math.ceil(Math.random()*2)))];
+      candidatePH=phSpace[Math.min(phSpace.length-1,Math.max(0,phSpace.indexOf(bestPrev.ph)+(Math.random()>.5?1:-1)*Math.ceil(Math.random()*2)))];
+      if(!candidateWL)candidateWL=664;if(!candidateT)candidateT=25;if(!candidatePH)candidatePH=7;
     }
 
-    document.getElementById('tab-linearity').innerHTML = `
-        <div class="analysis-box">
-            <h4>선형 회귀 분석 결과</h4>
-            <ul>
-                <li><strong>R² (결정계수):</strong> ${r2.toFixed(6)} → <span class="badge ${r2 >= 0.99 ? 'badge-good' : r2 >= 0.95 ? 'badge-warning' : 'badge-bad'}">${linearityGrade}</span></li>
-                <li><strong>회귀 방정식:</strong> A = ${slope.toFixed(2)} × c + ${intercept >= 0 ? '+' : ''}${intercept.toFixed(4)}</li>
-                <li><strong>해석:</strong> ${linearityDesc}</li>
-                <li><strong>유효 데이터 포인트:</strong> ${validPairs.length}개</li>
-            </ul>
-        </div>
-        <div class="analysis-box" style="margin-top:0.75rem; border-left-color: var(--success);">
-            <h4>선형 범위 확인</h4>
-            <p>Beer-Lambert 법칙은 일반적으로 흡광도 0.2~1.0 범위에서 잘 성립합니다.
-            흡광도가 너무 높으면 (>1.5) 빛이 거의 통과하지 못해 비선형 영역에 진입합니다.
-            고농도 웰(A1, A2)에서 비선형 편차가 관찰될 수 있으며, 이 경우 해당 데이터를 제외하고 회귀분석하는 것이 바람직합니다.</p>
-        </div>
-    `;
+    candidateAbs=predict(candidateWL,candidateT,candidatePH,concFixed);
+    boHistory.push({iter:iter+1,wl:candidateWL,temp:candidateT,ph:candidatePH,abs:candidateAbs});
+    if(candidateAbs>bestAbs){bestAbs=candidateAbs;bestConfig={wl:candidateWL,temp:candidateT,ph:candidatePH}}
+  }
 
-    // Accuracy
-    const epsilonCalc = slope / getPathLength();
-    const epsilonError = ((epsilonCalc - getEpsilon()) / getEpsilon() * 100);
+  steps[2].className='prog-step done';steps[3].className='prog-step cur';
 
-    document.getElementById('tab-accuracy').innerHTML = `
-        <div class="analysis-box">
-            <h4>피펫팅 정확도 평가</h4>
-            <ul>
-                <li><strong>평균 오차율:</strong> ${avgError.toFixed(1)}% → <span class="badge ${avgError < 10 ? 'badge-good' : avgError < 25 ? 'badge-warning' : 'badge-bad'}">${avgError < 10 ? '우수' : avgError < 25 ? '보통' : '미흡'}</span></li>
-                ${errors.sort((a,b) => b.absError - a.absError).slice(0,3).map(e =>
-                    `<li><strong>${e.well}:</strong> 오차 ${e.error > 0 ? '+' : ''}${e.error.toFixed(1)}% ${Math.abs(e.error) > 20 ? '⚠️ 큰 오차' : ''}</li>`
-                ).join('')}
-            </ul>
-        </div>
-        <div class="analysis-box" style="margin-top:0.75rem; border-left-color: #f4b400;">
-            <h4>몰 흡광 계수 (ε) 비교</h4>
-            <ul>
-                <li><strong>문헌값 ε:</strong> ${getEpsilon().toLocaleString()} M⁻¹cm⁻¹</li>
-                <li><strong>실험값 ε:</strong> ${epsilonCalc.toFixed(0).toLocaleString()} M⁻¹cm⁻¹</li>
-                <li><strong>편차:</strong> ${epsilonError > 0 ? '+' : ''}${epsilonError.toFixed(1)}%</li>
-                <li><strong>해석:</strong> ${Math.abs(epsilonError) < 15 ? '문헌값과 잘 일치합니다.' : '편차가 크며, 광로 길이 보정이나 용액 준비 과정을 재검토할 필요가 있습니다.'}</li>
-            </ul>
-        </div>
-    `;
+  // Anomaly Detection on all data
+  const allAbs=dataset.map(d=>d.abs);
+  const {q1,q3,iqr:iqrVal}=iqr(allAbs);
+  const lower=q1-1.5*iqrVal,upper=q3+1.5*iqrVal;
+  const anomalies=dataset.map((d,i)=>({...d,idx:i,isAnomaly:d.abs<lower||d.abs>upper}));
+  const anomalyCount=anomalies.filter(a=>a.isAnomaly).length;
 
-    // Precision
-    const measuredValid = [];
-    for (let i = 0; i < 11; i++) {
-        if (measuredData[i] !== null) measuredValid.push(measuredData[i]);
-    }
-    const residuals = validPairs.map(p => p.y - (slope * p.x + intercept));
-    const rmse = Math.sqrt(residuals.reduce((s, r) => s + r*r, 0) / residuals.length);
-    const cv = measuredValid.length > 0
-        ? (standardDeviation(residuals) / (measuredValid.reduce((a,b)=>a+b,0)/measuredValid.length) * 100)
-        : 0;
+  steps[3].className='prog-step done';
 
-    document.getElementById('tab-precision').innerHTML = `
-        <div class="analysis-box">
-            <h4>정밀도 (Precision) 평가</h4>
-            <ul>
-                <li><strong>RMSE (잔차 표준오차):</strong> ${rmse.toFixed(5)} A.U.</li>
-                <li><strong>잔차 CV:</strong> ${Math.abs(cv).toFixed(1)}%</li>
-                <li><strong>해석:</strong> ${rmse < 0.05 ? '잔차가 작아 피펫팅 정밀도가 높습니다.' : rmse < 0.15 ? '보통 수준의 정밀도입니다.' : '정밀도 개선이 필요합니다.'}</li>
-            </ul>
-        </div>
-        <div class="analysis-box" style="margin-top:0.75rem; border-left-color: var(--accent);">
-            <h4>오차 누적 효과 (Serial Dilution Error Propagation)</h4>
-            <p>연속 희석에서는 각 단계의 오차가 다음 단계로 전파됩니다.
-            예를 들어 각 단계에서 ±${avgError.toFixed(0)}%의 오차가 있다면,
-            10단계 후 최대 누적 오차는 이론적으로 ±${(Math.pow(1 + avgError/100, 10) * 100 - 100).toFixed(0)}%에 달할 수 있습니다.
-            실제로는 양/음 오차가 일부 상쇄되므로 이보다 작을 수 있습니다.</p>
-        </div>
-    `;
+  // ---- RENDER ----
+  // ML stats
+  el('p4ml').innerHTML=`
+    <div class="st ${regR2>.95?'good':'warn'}"><div class="v">${regR2.toFixed(4)}</div><div class="l">Ridge R²</div></div>
+    <div class="st"><div class="v">${rmse.toFixed(4)}</div><div class="l">RMSE</div></div>
+    <div class="st"><div class="v">${dataset.length}</div><div class="l">데이터 수</div></div>
+    <div class="st ${anomalyCount?'warn':'good'}"><div class="v">${anomalyCount}</div><div class="l">이상치</div></div>`;
 
-    // Beer-Lambert verification
-    document.getElementById('tab-beerlambert').innerHTML = `
-        <div class="analysis-box">
-            <h4>Beer-Lambert 법칙 성립 여부</h4>
-            <ul>
-                <li><strong>법칙 조건:</strong> A = ε × l × c (흡광도는 농도에 비례)</li>
-                <li><strong>검증 결과:</strong> R² = ${r2.toFixed(4)} → ${r2 >= 0.99 ? '선형 관계 성립' : r2 >= 0.95 ? '근사적으로 성립' : '비선형 편차 존재'}</li>
-                <li><strong>y절편:</strong> ${intercept.toFixed(4)} (이상적 값: 0) → ${Math.abs(intercept) < 0.02 ? '원점 통과 조건 충족' : '원점에서 벗어남 — 체계적 오차 존재 가능'}</li>
-            </ul>
-        </div>
-        <div class="analysis-box" style="margin-top:0.75rem; border-left-color: var(--error);">
-            <h4>비선형 영역 분석</h4>
-            <p>Beer-Lambert 법칙이 깨지는 주요 원인:</p>
-            <ul>
-                <li><strong>고농도:</strong> 흡광도 > 1.5일 때 빛이 과도하게 흡수되어 검출기 한계에 도달</li>
-                <li><strong>분자간 상호작용:</strong> 고농도에서 메틸렌 블루 분자의 이합체(dimer) 형성</li>
-                <li><strong>산란:</strong> 미세 입자에 의한 빛 산란이 흡광도에 영향</li>
-                <li><strong>광원 다색성:</strong> 완전히 단색광이 아닌 경우 편차 발생</li>
-            </ul>
-        </div>
-    `;
+  // Pred vs actual
+  destroyChart('c4pred');
+  charts.c4pred=new Chart(el('c4pred'),{type:'scatter',data:{datasets:[
+    {label:'예측 vs 실측',data:targets.map((t,i)=>({x:t,y:preds[i]})),backgroundColor:'rgba(26,115,232,.6)',pointRadius:4},
+    {label:'y=x',data:[{x:0,y:0},{x:Math.max(...targets)*1.1,y:Math.max(...targets)*1.1}],borderColor:'rgba(211,47,47,.4)',borderDash:[5,3],pointRadius:0,showLine:true,type:'line'}
+  ]},options:{responsive:true,maintainAspectRatio:false,scales:{x:{title:{display:true,text:'실측 흡광도'}},y:{title:{display:true,text:'예측 흡광도'}}},plugins:{legend:{position:'bottom',labels:{font:{size:10}}}}}});
+
+  // Feature importance
+  destroyChart('c4feat');
+  charts.c4feat=new Chart(el('c4feat'),{type:'bar',data:{
+    labels:fNames,datasets:[{label:'중요도 (%)',data:importance,backgroundColor:COLORS.slice(0,4).map(c=>c+'88'),borderColor:COLORS.slice(0,4),borderWidth:1}]
+  },options:{responsive:true,maintainAspectRatio:false,indexAxis:'y',scales:{x:{title:{display:true,text:'상대 중요도 (%)'}}},plugins:{legend:{display:false}}}});
+
+  // BO convergence
+  destroyChart('c4bo');
+  let bestSoFar=[];let curBest=-Infinity;
+  boHistory.forEach(h=>{curBest=Math.max(curBest,h.abs);bestSoFar.push(curBest)});
+  charts.c4bo=new Chart(el('c4bo'),{type:'line',data:{
+    labels:boHistory.map(h=>h.iter),
+    datasets:[
+      {label:'탐색 흡광도',data:boHistory.map(h=>h.abs),borderColor:'rgba(26,115,232,.4)',backgroundColor:'rgba(26,115,232,.1)',pointRadius:3,fill:true},
+      {label:'최고값 (수렴)',data:bestSoFar,borderColor:'#d32f2f',borderWidth:2,pointRadius:0,fill:false}
+    ]
+  },options:{responsive:true,maintainAspectRatio:false,scales:{x:{title:{display:true,text:'반복 횟수'}},y:{title:{display:true,text:'예측 흡광도'}}},plugins:{legend:{position:'bottom',labels:{font:{size:10}}}}}});
+
+  // BO list
+  const listHtml=boHistory.map((h,i)=>{
+    const isBest=h.abs===bestSoFar[i]&&(i===0||bestSoFar[i]>bestSoFar[i-1]);
+    return `<div class="bo-iter" style="${isBest?'background:#e8f5e9':''}">
+      <span style="width:24px;font-weight:700;color:var(--ts)">#${h.iter}</span>
+      <span style="flex:0 0 180px;font-size:.75rem">${h.wl}nm / ${h.temp}°C / pH${h.ph}</span>
+      <div class="bo-bar"><div class="bo-fill" style="width:${Math.max(5,h.abs/bestAbs*100)}%;background:${isBest?'var(--ok)':'var(--p)'}"></div></div>
+      <span style="width:60px;text-align:right;font-weight:600;font-size:.8rem">${h.abs.toFixed(4)}</span>
+      ${isBest?'<span class="bg bg-ok">NEW BEST</span>':''}
+    </div>`;
+  }).join('');
+  el('p4bolist').innerHTML=listHtml;
+
+  el('p4boResult').innerHTML=`<h4>Bayesian Optimization 결과</h4>
+  <p><strong>최적 조건:</strong> ${bestConfig.wl}nm / ${bestConfig.temp}°C / pH ${bestConfig.ph} → 예측 흡광도: ${bestAbs.toFixed(4)}</p>
+  <p>30회 탐색으로 수렴 (전탐색 ${wlSpace.length*tSpace.length*phSpace.length}회 대비 ${(30/(wlSpace.length*tSpace.length*phSpace.length)*100).toFixed(1)}% 효율)</p>`;
+
+  // Surface plots
+  drawSurface(predict,mins,maxs);
+
+  // Anomaly chart
+  destroyChart('c4anom');
+  charts.c4anom=new Chart(el('c4anom'),{type:'scatter',data:{datasets:[
+    {label:'정상',data:anomalies.filter(a=>!a.isAnomaly).map((a,i)=>({x:i,y:a.abs})),backgroundColor:'rgba(26,115,232,.5)',pointRadius:4},
+    {label:'이상치',data:anomalies.filter(a=>a.isAnomaly).map((a)=>({x:a.idx,y:a.abs})),backgroundColor:'rgba(211,47,47,.8)',pointRadius:6,pointStyle:'crossRot'},
+  ]},options:{responsive:true,maintainAspectRatio:false,scales:{x:{title:{display:true,text:'데이터 인덱스'}},y:{title:{display:true,text:'흡광도'}}},
+  plugins:{legend:{position:'bottom',labels:{font:{size:10}}},
+  annotation:{annotations:{
+    upper:{type:'line',yMin:upper,yMax:upper,borderColor:'rgba(211,47,47,.5)',borderDash:[5,3],borderWidth:1,label:{display:true,content:`Upper: ${upper.toFixed(3)}`,position:'start',font:{size:9}}},
+    lower:{type:'line',yMin:lower,yMax:lower,borderColor:'rgba(211,47,47,.5)',borderDash:[5,3],borderWidth:1,label:{display:true,content:`Lower: ${lower.toFixed(3)}`,position:'start',font:{size:9}}}
+  }}}}});
+
+  const anomDesc=anomalies.filter(a=>a.isAnomaly);
+  el('p4anomResult').innerHTML=`<h4>이상치 탐지 결과</h4>
+  <p>IQR 범위: [${lower.toFixed(4)}, ${upper.toFixed(4)}] | 이상치 ${anomalyCount}개 / ${dataset.length}개</p>
+  ${anomDesc.length?`<ul>${anomDesc.map(a=>`<li>${a.wl}nm, ${a.temp}°C, pH${a.ph}: A=${a.abs.toFixed(4)} ${a.ph<=5?'← leuco-MB 전환 가능':a.abs>upper?'← 고흡광도 이상':'← 저흡광도 이상'}</li>`).join('')}</ul>`:'<p>이상치 없음</p>'}`;
+
+  el('p4res').style.display='block';
 }
 
-function standardDeviation(arr) {
-    const mean = arr.reduce((a, b) => a + b, 0) / arr.length;
-    return Math.sqrt(arr.reduce((s, v) => s + (v - mean) ** 2, 0) / arr.length);
+function drawSurface(predict,mins,maxs){
+  // Surface 0: wavelength × temperature (pH=7, conc=10)
+  destroyChart('c4s0');destroyChart('c4s1');destroyChart('c4s2');
+
+  const wlRange=[550,570,590,610,630,650,664,680,700];
+  const tRange=[4,15,25,35,40,50,60];
+  const phRange=[3,5,7,9,11];
+
+  // Using bubble chart as pseudo-heatmap
+  function makeSurface(canvasId,xLabels,yLabels,xName,yName,getVal){
+    const data=[];
+    const allVals=[];
+    xLabels.forEach((x,xi)=>{yLabels.forEach((y,yi)=>{const v=getVal(x,y);allVals.push(v);data.push({x:xi,y:yi,v})})});
+    const vMin=Math.min(...allVals),vMax=Math.max(...allVals);
+
+    const ds=data.map(d=>{
+      const t=(d.v-vMin)/(vMax-vMin||1);
+      const r=Math.round(255*(1-t));const g=Math.round(100+100*t);const b=Math.round(255*t);
+      return{x:d.x,y:d.y,r:12,backgroundColor:`rgba(${Math.round(33+t*180)},${Math.round(50+t*107)},${Math.round(200-t*100)},0.7)`};
+    });
+
+    charts[canvasId]=new Chart(el(canvasId),{type:'bubble',data:{datasets:[{
+      label:'예측 흡광도',
+      data:ds.map((d,i)=>({...d,v:data[i].v})),
+    }]},options:{responsive:true,maintainAspectRatio:false,
+      scales:{
+        x:{title:{display:true,text:xName},ticks:{callback:(_,i)=>xLabels[i]||''},min:-.5,max:xLabels.length-.5},
+        y:{title:{display:true,text:yName},ticks:{callback:(_,i)=>yLabels[i]||''},min:-.5,max:yLabels.length-.5}
+      },
+      plugins:{legend:{display:false},tooltip:{callbacks:{
+        label:ctx=>`${xName}: ${xLabels[ctx.raw.x]}, ${yName}: ${yLabels[ctx.raw.y]}, A: ${ctx.raw.v.toFixed(4)}`
+      }}}
+    }});
+  }
+
+  makeSurface('c4s0',wlRange,tRange,'파장 (nm)','온도 (°C)',(wl,t)=>predict(wl,t,7,10));
+  makeSurface('c4s1',wlRange,phRange,'파장 (nm)','pH',(wl,ph)=>predict(wl,25,ph,10));
+  makeSurface('c4s2',tRange,phRange,'온도 (°C)','pH',(t,ph)=>predict(664,t,ph,10));
 }
 
-// ============ TAB SWITCHING ============
-function switchTab(tabName) {
-    document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
-    document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
-    document.getElementById(`tab-${tabName}`).classList.add('active');
-    event.target.classList.add('active');
+function surfTab(n){
+  document.querySelectorAll('#p4 .tab').forEach((t,i)=>t.classList.toggle('act',i===n));
+  ['surf0','surf1','surf2'].forEach((id,i)=>el(id).classList.toggle('act',i===n));
 }
 
-// ============ SAMPLE DATA ============
-function loadSampleData() {
-    // Realistic sample data with some experimental error
-    const sampleAbsorbances = [
-        2.850,  // A1: 원액 (may be saturated)
-        1.420,  // A2
-        0.715,  // A3
-        0.362,  // A4
-        0.178,  // A5
-        0.092,  // A6
-        0.048,  // A7
-        0.026,  // A8
-        0.015,  // A9
-        0.009,  // A10
-        0.006,  // A11
-        0.003   // A12: blank
-    ];
+// ====================== PAGE 5: Report ======================
+function genReport(){
+  let html='<div class="prog"><div class="prog-step done">Phase 1: 파장</div><div class="prog-step done">Phase 2: 온도</div><div class="prog-step done">Phase 3: pH</div><div class="prog-step done">Phase 4: AI4SE</div></div>';
 
-    for (let i = 0; i < 12; i++) {
-        measuredData[i] = sampleAbsorbances[i];
-    }
-    updateAll();
+  // Check data availability
+  const hasP0=D0.some(v=>v!==null);
+  const hasP1=Object.values(D1).some(v=>v!==null);
+  const hasP2=Object.values(D2).some(v=>v!==null);
+  const hasP3=Object.values(D3).some(v=>v!==null);
+
+  html+=`<div class="ab"><h4>데이터 수집 현황</h4><ul>
+  <li>기본 측정 (Serial Dilution): ${hasP0?'<span class="bg bg-ok">완료</span>':'<span class="bg bg-er">미입력</span>'}</li>
+  <li>Phase 1 (파장 탐색): ${hasP1?'<span class="bg bg-ok">완료</span>':'<span class="bg bg-er">미입력</span>'}</li>
+  <li>Phase 2 (온도 안정성): ${hasP2?'<span class="bg bg-ok">완료</span>':'<span class="bg bg-er">미입력</span>'}</li>
+  <li>Phase 3 (pH 안정성): ${hasP3?'<span class="bg bg-ok">완료</span>':'<span class="bg bg-er">미입력</span>'}</li>
+  </ul></div>`;
+
+  if(hasP1){
+    // Best wavelength from Phase 1
+    const regs={};
+    WLS.forEach((wl,wi)=>{
+      const xs=[],ys=[];
+      P1_CONCS.forEach((conc,ci)=>{const v=D1[`${wi}_${ci}`];if(v!=null&&conc>0){xs.push(conc);ys.push(v)}});
+      if(xs.length>=2)regs[wl]=linReg(xs,ys);
+    });
+    const best=Object.entries(regs).sort((a,b)=>b[1].r2*b[1].slope-a[1].r2*a[1].slope)[0];
+    if(best)html+=`<div class="ab ok"><h4>Phase 1 결론</h4><p>최적 파장: <strong>${best[0]}nm</strong> (R²=${best[1].r2.toFixed(4)}, 감도=${best[1].slope.toFixed(2)})</p></div>`;
+  }
+
+  if(hasP2){
+    html+=`<div class="ab"><h4>Phase 2 결론</h4><p>온도별 흡광도 변화를 분석했습니다. 고온(60°C)에서의 이합체 분리 효과를 확인하세요.</p></div>`;
+  }
+
+  if(hasP3){
+    html+=`<div class="ab wn"><h4>Phase 3 결론</h4><p>pH 변화에 따른 leuco-MB 전환 구간을 분석했습니다. 산성(pH < 5) 영역의 흡광도 급감을 확인하세요.</p></div>`;
+  }
+
+  html+=`<div class="ab" style="border-left-color:#9c27b0;background:#f3e5f5"><h4>AI4SE 구조적 동형성 결론</h4>
+  <p>"실험과학의 최적 조건 탐색과 소프트웨어 성능 최적화는 구조적으로 동형이며, AI4SE 기법(Ridge 회귀, Bayesian Optimization, Anomaly Detection)이 생명과학 실험 자동화에 직접 활용 가능함을 실증하였다."</p></div>`;
+
+  html+=`<div class="btns"><button class="btn btn-p" onclick="exportFullCSV()">전체 데이터 CSV 내보내기</button></div>`;
+
+  el('report').innerHTML=html;
 }
 
-function clearData() {
-    measuredData = new Array(12).fill(null);
-    updateAll();
+function exportFullCSV(){
+  let csv='Source,Wavelength(nm),Temperature(C),pH,Concentration(uM),Absorbance\n';
+
+  // P1
+  WLS.forEach((wl,wi)=>{P1_CONCS.forEach((conc,ci)=>{const v=D1[`${wi}_${ci}`];if(v!=null)csv+=`Phase1,${wl},25,7,${conc},${v}\n`})});
+  // P2
+  TEMPS.forEach(t=>{p1_selWL.forEach((wl,wi)=>{const v=D2[`${t}_${wi}`];if(v!=null)csv+=`Phase2,${wl},${t},7,10,${v}\n`})});
+  // P3
+  PHS.forEach(ph=>{p1_selWL.forEach((wl,wi)=>{const v=D3[`${ph}_${wi}`];if(v!=null)csv+=`Phase3,${wl},25,${ph},10,${v}\n`})});
+
+  dl('mb_full_data.csv',csv);
 }
 
-// ============ CSV EXPORT ============
-function exportCSV() {
-    const unit = document.getElementById('concUnit').value;
-    const concs = getConcentrations(unit);
-    const concsMol = getConcentrations('mol');
-    const blankVal = measuredData[11] !== null ? measuredData[11] : 0;
-
-    let csv = 'Well,Dilution Step,Dilution Factor,Concentration (' + (unit === 'mol' ? 'mol/L' : 'mg/mL') + '),Theoretical Abs,Measured Abs,Corrected Abs,Error (%)\n';
-
-    for (let i = 0; i < 12; i++) {
-        const theoA = i < 11 ? theoreticalAbsorbance(concsMol[i]) : 0;
-        const measured = measuredData[i] !== null ? measuredData[i] : '';
-        const corrected = measuredData[i] !== null ? Math.max(0, measuredData[i] - blankVal) : '';
-        const error = (i < 11 && corrected !== '' && theoA > 0) ? ((corrected - theoA) / theoA * 100).toFixed(2) : '';
-        const factor = DILUTION_FACTORS[i] === Infinity ? 'Inf' : DILUTION_FACTORS[i];
-
-        csv += `${WELLS[i]},${DILUTION_LABELS[i]},${factor},${concs[i].toExponential(4)},${theoA.toFixed(4)},${measured},${corrected !== '' ? corrected.toFixed(4) : ''},${error}\n`;
-    }
-
-    const blob = new Blob(['\ufeff' + csv], { type: 'text/csv;charset=utf-8;' });
-    const link = document.createElement('a');
-    link.href = URL.createObjectURL(blob);
-    link.download = `methylene_blue_analysis_${new Date().toISOString().slice(0,10)}.csv`;
-    link.click();
-}
-
-// ============ INIT ============
-window.addEventListener('load', init);
+// ====================== INIT ======================
+window.addEventListener('load',()=>{initP0();initP1();initP2();initP3();updateP2P3Headers()});
 </script>
-
 </body>
 </html>
